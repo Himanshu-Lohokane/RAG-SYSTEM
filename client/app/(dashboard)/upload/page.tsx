@@ -132,8 +132,8 @@ const DocumentUploadPage = () => {
     setFiles(prev => [...prev, ...newFiles]);
 
     // Start OCR processing for each file
-    newFiles.forEach(file => {
-      processOCR(file.id);
+    newFiles.forEach(uploadedFile => {
+      processOCR(uploadedFile.id, uploadedFile.file);
     });
 
     toast({
@@ -142,16 +142,20 @@ const DocumentUploadPage = () => {
     });
   };
 
-  const processOCR = async (fileId: string) => {
+  const processOCR = async (fileId: string, fileToProcess?: File) => {
     console.log(`[UPLOAD] Starting OCR processing for file ID: ${fileId}`);
     
     try {
-      // Find the file
-      const fileData = files.find(f => f.id === fileId) || 
-                      [...files].find(f => f.id === fileId);
-      
-      if (!fileData || !fileData.file) {
-        throw new Error("File not found for processing");
+      // Use the provided file or find it in state
+      let fileData;
+      if (fileToProcess) {
+        fileData = { file: fileToProcess, name: fileToProcess.name };
+      } else {
+        const foundFile = files.find(f => f.id === fileId);
+        if (!foundFile || !foundFile.file) {
+          throw new Error("File not found for processing");
+        }
+        fileData = { file: foundFile.file, name: foundFile.name };
       }
 
       // Update status to processing

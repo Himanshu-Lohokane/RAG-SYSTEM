@@ -43,9 +43,20 @@ interface LanguageDetection {
   is_kmrl_primary: boolean;
 }
 
+interface TranslationResult {
+  original_text: string;
+  translated_text: string;
+  source_language: string;
+  target_language: string;
+  source_language_name: string;
+  target_language_name: string;
+  error: string | null;
+}
+
 interface ProcessingResult {
   ocr: OCRResult;
   language_detection: LanguageDetection;
+  translation?: TranslationResult;  // Optional translation result
   metadata: {
     filename: string;
     file_size: number;
@@ -142,8 +153,21 @@ const DocumentUploadPage = () => {
     });
   };
 
+  /**
+   * Process a document through the comprehensive OCR pipeline
+   * 
+   * This function sends an image file to the DataTrack KMRL backend service for:
+   * 1. OCR text extraction using Google Vision API
+   * 2. Language detection (optimized for KMRL Malayalam/English documents)
+   * 3. Automatic translation to English when non-English text is detected
+   * 
+   * The function updates file status and progress in real-time as processing occurs.
+   * 
+   * @param fileId - Unique ID of the file in the current state
+   * @param fileToProcess - Optional file object to process directly
+   */
   const processOCR = async (fileId: string, fileToProcess?: File) => {
-    console.log(`[UPLOAD] Starting OCR processing for file ID: ${fileId}`);
+    console.log(`[UPLOAD] Starting document processing for file ID: ${fileId}`);
     
     try {
       // Use the provided file or find it in state
@@ -165,12 +189,14 @@ const DocumentUploadPage = () => {
           : file
       ));
 
-      console.log(`[UPLOAD] Sending OCR request for: ${fileData.name}`);
+      console.log(`[UPLOAD] Sending comprehensive document processing request for: ${fileData.name}`);
 
-      // Create FormData for API request
+      // Create FormData for comprehensive document processing
       const formData = new FormData();
       formData.append('file', fileData.file);
-      formData.append('ocr_method', 'document'); // Use document method for KMRL docs
+      formData.append('ocr_method', 'document'); // Use document method (optimized for KMRL docs)
+      formData.append('include_translation', 'true'); // Enable translation
+      formData.append('target_language', 'en'); // Translate to English (from any detected language)
 
       // Update progress
       setFiles(prev => prev.map(file => 
@@ -179,8 +205,9 @@ const DocumentUploadPage = () => {
           : file
       ));
 
-      // Call DataTrack KMRL OCR API
-      const response = await fetch('http://localhost:8001/api/ocr/extract-text', {
+      // Call comprehensive DataTrack KMRL Document Processing API
+      // This single endpoint handles OCR, language detection and translation
+      const response = await fetch('http://localhost:8001/api/documents/process', {
         method: 'POST',
         body: formData,
       });
@@ -197,7 +224,7 @@ const DocumentUploadPage = () => {
       }
 
       const apiResult = await response.json();
-      console.log(`[UPLOAD] OCR API Response:`, apiResult);
+      console.log(`[UPLOAD] Document processing API Response:`, apiResult);
 
       // Update progress
       setFiles(prev => prev.map(file => 
@@ -206,29 +233,10 @@ const DocumentUploadPage = () => {
           : file
       ));
 
-      // Get language detection
-      let languageResult = null;
-      if (apiResult.data.text) {
-        try {
-          const langResponse = await fetch('http://localhost:8001/api/language/detect', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ text: apiResult.data.text }),
-          });
-
-          if (langResponse.ok) {
-            const langData = await langResponse.json();
-            languageResult = langData.data;
-            console.log(`[UPLOAD] Language detected:`, languageResult);
-          }
-        } catch (error) {
-          console.warn(`[UPLOAD] Language detection failed:`, error);
-        }
-      }
-
-      // Complete processing
+      // Extract OCR, language detection and translation from the comprehensive response
+      const { ocr, language_detection, translation } = apiResult.data;
+      
+      // Complete processing with all results (OCR + language + translation)
       setFiles(prev => prev.map(file => 
         file.id === fileId 
           ? { 
@@ -236,9 +244,15 @@ const DocumentUploadPage = () => {
               status: "completed", 
               progress: 100,
               result: {
-                ocr: apiResult.data,
-                language_detection: languageResult,
-                metadata: apiResult.metadata
+                ocr: ocr,
+                language_detection: language_detection,
+                translation: translation, // Include translation data from comprehensive endpoint
+                metadata: {
+                  filename: fileData.name,
+                  file_size: fileData.file.size,
+                  processed_at: apiResult.data.processing_info.upload_timestamp || new Date().toISOString(),
+                  processing_time_seconds: apiResult.data.processing_info.processing_time_seconds
+                }
               }
             }
           : file
@@ -426,7 +440,9 @@ const DocumentUploadPage = () => {
                                         <span>•</span>
                                         <span>{file.result.ocr.character_count} chars</span>
                                         <span>•</span>
-                                        <span>{(file.result.ocr.confidence * 100).toFixed(1)}% confidence</span>
+                                        <span>{file.result?.ocr?.confidence ? 
+                                          (file.result.ocr.confidence * 100).toFixed(1) + '% confidence' : 
+                                          'Processing...'}</span>
                                       </>
                                     )}
                                   </div>
@@ -492,6 +508,10 @@ const DocumentUploadPage = () => {
                 <CardDescription>{selectedFileResult.name}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* Debug logs to help diagnose result structure */}
+                {console.log('[DEBUG] Selected file result:', selectedFileResult)}
+                {console.log('[DEBUG] Result structure:', selectedFileResult?.result)}
+                
                 {selectedFileResult.result && (
                   <>
                     {/* OCR Stats */}
@@ -499,25 +519,33 @@ const DocumentUploadPage = () => {
                       <div>
                         <p className="font-medium">Confidence</p>
                         <p className="text-muted-foreground">
-                          {(selectedFileResult.result.ocr.confidence * 100).toFixed(1)}%
+                          {selectedFileResult.result.ocr.confidence ? 
+                            (selectedFileResult.result.ocr.confidence * 100).toFixed(1) + '%' : 
+                            'N/A'}
                         </p>
                       </div>
                       <div>
                         <p className="font-medium">Processing Time</p>
                         <p className="text-muted-foreground">
-                          {selectedFileResult.result.ocr.processing_time_seconds.toFixed(2)}s
+                          {selectedFileResult.result.metadata.processing_time_seconds ? 
+                            selectedFileResult.result.metadata.processing_time_seconds.toFixed(2) + 's' : 
+                            'N/A'}
                         </p>
                       </div>
                       <div>
                         <p className="font-medium">Characters</p>
                         <p className="text-muted-foreground">
-                          {selectedFileResult.result.ocr.character_count}
+                          {selectedFileResult.result.ocr.text ? 
+                            selectedFileResult.result.ocr.text.length : 
+                            'N/A'}
                         </p>
                       </div>
                       <div>
                         <p className="font-medium">Words</p>
                         <p className="text-muted-foreground">
-                          {selectedFileResult.result.ocr.word_count}
+                          {selectedFileResult.result.ocr.text ? 
+                            selectedFileResult.result.ocr.text.split(/\s+/).filter(Boolean).length : 
+                            'N/A'}
                         </p>
                       </div>
                     </div>
@@ -541,7 +569,15 @@ const DocumentUploadPage = () => {
 
                     {/* Extracted Text */}
                     <div className="space-y-2">
-                      <h4 className="font-medium">Extracted Text</h4>
+                      <h4 className="font-medium flex items-center gap-2">
+                        <FileText className="h-4 w-4" />
+                        Extracted Text 
+                        {selectedFileResult.result.language_detection && (
+                          <Badge variant="outline" className="ml-2">
+                            {selectedFileResult.result.language_detection.language_name}
+                          </Badge>
+                        )}
+                      </h4>
                       <Textarea 
                         value={selectedFileResult.result.ocr.text}
                         readOnly
@@ -549,6 +585,25 @@ const DocumentUploadPage = () => {
                         className="resize-none text-sm"
                       />
                     </div>
+                    
+                    {/* Translated Text - Show only when translation exists */}
+                    {selectedFileResult.result.translation && (
+                      <div className="space-y-2">
+                        <h4 className="font-medium flex items-center gap-2">
+                          <Languages className="h-4 w-4" />
+                          Translated Text
+                          <Badge variant="outline" className="ml-2">
+                            {selectedFileResult.result.translation.target_language_name}
+                          </Badge>
+                        </h4>
+                        <Textarea 
+                          value={selectedFileResult.result.translation.translated_text}
+                          readOnly
+                          rows={8}
+                          className="resize-none text-sm"
+                        />
+                      </div>
+                    )}
 
                     {/* Actions */}
                     <div className="flex gap-2">
@@ -556,10 +611,12 @@ const DocumentUploadPage = () => {
                         <Download className="h-4 w-4 mr-2" />
                         Export Text
                       </Button>
-                      <Button size="sm" variant="outline">
-                        <Languages className="h-4 w-4 mr-2" />
-                        Translate
-                      </Button>
+                      {!selectedFileResult.result.translation && (
+                        <Button size="sm" variant="outline">
+                          <Languages className="h-4 w-4 mr-2" />
+                          Translate
+                        </Button>
+                      )}
                     </div>
                   </>
                 )}

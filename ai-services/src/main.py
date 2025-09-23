@@ -19,6 +19,9 @@ from services.translation_service import TranslationService
 from services.classification_service import ClassificationService
 from models.ocr_models import KMRLDocumentProcessingResult, OCRResult, LanguageDetectionResult
 
+# Import routers
+from routers import classify
+
 # Initialize FastAPI app
 app = FastAPI(
     title="DataTrack KMRL - OCR & Document Processing API",
@@ -27,6 +30,9 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc"
 )
+
+# Include routers
+app.include_router(classify.router)
 
 # CORS middleware for frontend integration
 app.add_middleware(
@@ -53,6 +59,7 @@ def get_translation_service() -> TranslationService:
 
 def get_classification_service() -> ClassificationService:
     """Dependency injection for document classification service"""
+    print("[API] Initializing Google Natural Language API classification service")
     return ClassificationService()
 
 # Health check endpoints
@@ -328,7 +335,7 @@ async def process_document(
 
 # Simple text classification endpoint - perfect for Swagger UI
 @app.post("/api/classification/text")
-async def classify_text(
+async def classify_text_api(
     text: str = Body(..., description="The text content to classify", example="This is a sample document about safety procedures for equipment operation"),
     classification_service: ClassificationService = Depends(get_classification_service)
 ):
@@ -340,68 +347,11 @@ async def classify_text(
     try:
         # Process the document
         print(f"[API] Classifying text with length: {len(text)}")
-        classification_result = classification_service.classify_document(text)
-        
-        # Return simple result
-        return {
-            "category": classification_result["category"],
-            "confidence": classification_result["confidence"],
-            "all_categories": classification_result["all_categories"]
-        }
-    except Exception as e:
-        print(f"[API] Error in classification: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Classification failed: {str(e)}")
-    try:
-        # Get text from request in the most lenient way possible
-        text = ""
-        
-        # Try to extract text field if available
-        if isinstance(request, dict):
-            # Look for a text field
-            if "text" in request:
-                text = str(request["text"])
-            # Try to find any field with a string value longer than 50 chars
-            else:
-                for key, value in request.items():
-                    if isinstance(value, str) and len(value) > 50:
-                        text = str(value)
-                        break
-                # If still no text, just stringify the whole request
-                if not text:
-                    text = str(request)
-        # If direct string, use it
-        elif isinstance(request, str):
-            text = request
-        # Anything else, just stringify it
-        else:
-            text = str(request)
-            
-        # Process the document
-        print(f"[API] Classifying text with length: {len(text)}")
-        classification_result = classification_service.classify_document(text)
-        
-        # Return simple result
-        return {
-            "success": True,
-            "category": classification_result["category"],
-            "confidence": classification_result["confidence"],
-            "all_categories": classification_result["all_categories"]
-        }
-    except Exception as e:
-        print(f"[API] Error in classification: {str(e)}")
-        return {"success": False, "error": str(e)}
-            
-        print(f"[API] Classification request received - Text length: {len(text)} characters")
-        
         start_time = time.time()
-        
-        # Classify the document based on text
-        print(f"[API] Classifying document based on provided text...")
         classification_result = classification_service.classify_document(text)
-        
         total_processing_time = time.time() - start_time
         
-        # Return classification results
+        # Return simple result
         print(f"[API] ✅ Document classification completed - Category: {classification_result['category']}")
         return {
             "success": True,
@@ -411,16 +361,11 @@ async def classify_text(
                     "category": classification_result["category"],
                     "confidence": classification_result["confidence"],
                     "all_categories": classification_result["all_categories"],
-                    "processing_time_seconds": classification_result["processing_time_seconds"]
+                    "processing_time_seconds": classification_result.get("processing_time_seconds", 0),
+                    "method": classification_result.get("method", "unknown")
                 },
                 "text_preview": text[:200] + "..." if len(text) > 200 else text
             }
-        }
-    except Exception as e:
-        print(f"[API] ⚠️ Error processing classification request: {str(e)}")
-        return {
-            "success": False,
-            "error": f"Failed to process text for classification: {str(e)}"
         }
     except Exception as e:
         print(f"[API] ❌ Classification error: {str(e)}")

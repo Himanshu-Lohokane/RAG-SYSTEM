@@ -26,6 +26,11 @@ class Config:
     
     PROJECT_ID = "aiagent-465805"
     
+    @staticmethod
+    def get_credentials():
+        """Get Google Cloud credentials from embedded credentials"""
+        return service_account.Credentials.from_service_account_info(Config.GOOGLE_CREDENTIALS)
+    
     # KMRL Specific Language Mappings (English + Malayalam focus)
     LANGUAGE_NAMES = {
         # KMRL Primary Languages

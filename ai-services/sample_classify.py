@@ -7,7 +7,7 @@ Natural Language API for document classification without requiring custom traini
 Usage:
     python sample_classify.py [text_file.txt]
     
-    If no file is provided, the script will use a sample text.
+    If no file is provided, the script will use sample texts.
 """
 
 import sys
@@ -16,12 +16,13 @@ import time
 import json
 
 # Add parent directories to path for imports
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from config.settings import Config
+from src.config.settings import Config
 
 try:
     from google.cloud import language_v1
+    from google.api_core.client_options import ClientOptions
     HAS_GOOGLE_LANGUAGE = True
 except ImportError:
     HAS_GOOGLE_LANGUAGE = False
@@ -48,16 +49,16 @@ def classify_text_with_natural_language_api(text_content):
         }
     
     try:
-        # Initialize the Natural Language client with credentials from Config
-        from google.api_core.client_options import ClientOptions
+        # Get credentials from Config
         credentials = Config.get_credentials()
+        
+        # Initialize the Natural Language client with the correct project from Config
         client_options = ClientOptions(quota_project_id=Config.PROJECT_ID)
         client = language_v1.LanguageServiceClient(credentials=credentials, client_options=client_options)
         
-        # Print using configured project
         print(f"Using project: {Config.PROJECT_ID}")
         
-        # Prepare the document - using the right class based on inspection
+        # Prepare the document
         document = language_v1.Document(
             content=text_content,
             type_=language_v1.Document.Type.PLAIN_TEXT
@@ -199,18 +200,17 @@ def main():
         print(f"Reading text from: {file_path}")
         with open(file_path, 'r', encoding='utf-8') as file:
             text_content = file.read()
+        
+        # Classify the text
+        result = classify_text_with_natural_language_api(text_content)
+        pretty_print_result(result)
     else:
-        # Use sample text
+        # Use sample texts
         print("No file provided. Using sample texts...")
         for doc_type, sample in sample_texts.items():
             print(f"\n\n--- CLASSIFYING SAMPLE: {doc_type.upper()} ---")
             result = classify_text_with_natural_language_api(sample)
             pretty_print_result(result)
-        return
-
-    # Classify the text
-    result = classify_text_with_natural_language_api(text_content)
-    pretty_print_result(result)
 
 if __name__ == "__main__":
     main()

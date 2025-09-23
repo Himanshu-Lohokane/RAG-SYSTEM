@@ -9,6 +9,13 @@ for document classification without requiring custom training.
 from typing import Dict, List, Optional, Tuple
 import time
 import logging
+import sys
+import os
+
+# Add parent directories to path for imports
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from config.settings import Config
 
 # Import Google Cloud Natural Language API - with proper error handling for import
 try:
@@ -140,23 +147,22 @@ class ClassificationService:
         self.language_client = None
         self.use_google_api = False
         
-        # Attempt to initialize the Language API client with credentials for the correct project
+        # Attempt to initialize the Language API client with existing credentials
+        # from the same configuration used by other services
         if HAS_GOOGLE_LANGUAGE:
             try:
-                # Explicitly set the project ID to AIagent
-                from google.cloud.language_v1 import LanguageServiceClient
-                from google.api_core.client_options import ClientOptions
-                
-                client_options = ClientOptions(quota_project_id="aiagent-465805")
-                self.language_client = LanguageServiceClient(client_options=client_options)
+                # Use the same credentials and project settings as the rest of the application
+                credentials = Config.get_credentials()
+                self.language_client = language_v1.LanguageServiceClient(credentials=credentials)
                 self.use_google_api = True
-                logging.info("Google Cloud Natural Language API client initialized successfully with project 'aiagent-465805'")
+                print("[CLASS] Google Cloud Natural Language API client initialized successfully")
+                print(f"[CLASS] Using project: {Config.PROJECT_ID}")
             except Exception as e:
                 self.use_google_api = False
-                logging.error(f"Failed to initialize Google Cloud Natural Language API: {e}")
-                logging.info("Falling back to keyword-based classification")
+                print(f"[CLASS] ❌ Failed to initialize Google Cloud Natural Language API: {e}")
+                print("[CLASS] Falling back to keyword-based classification")
         else:
-            logging.info("Google Cloud Language API not available. Using keyword-based classification only.")
+            print("[CLASS] Google Cloud Language API not available. Using keyword-based classification only.")
     
     def _find_best_kmrl_category(self, google_categories: List[Dict]) -> Tuple[str, float]:
         """

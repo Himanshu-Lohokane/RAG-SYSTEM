@@ -13,12 +13,7 @@ class GeminiClient:
     """
     
     # Default system prompt - you can customize this to control AI behavior
-    DEFAULT_SYSTEM_PROMPT = """
-    You are KMRL Assistant, a helpful AI for the Kochi Metro Rail Limited.
-    Be concise, helpful, and provide accurate information related to metro services.
-    When asked about Kochi Metro, provide helpful transportation advice.
-    Keep responses friendly but professional.
-    """
+    DEFAULT_SYSTEM_PROMPT = """You are KMRL Assistant, a helpful AI for Kochi Metro Rail Limited. Be concise, helpful, and provide accurate information related to metro services. When asked about Kochi Metro, provide helpful transportation advice. Keep responses friendly but professional."""
     
     def __init__(self, api_key: str, system_prompt: str = None):
         """Initialize the Gemini client with the provided API key"""

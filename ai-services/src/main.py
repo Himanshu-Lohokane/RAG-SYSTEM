@@ -80,7 +80,8 @@ async def root():
             "full_processing": "/api/documents/process",
             "classification": "/api/classification/document",
             "supported_languages": "/api/languages",
-            "chat": "/api/chat/simple"
+            "chat_advanced": "/api/chat/simple",
+            "chat_simple": "/api/chat/message"
         }
     }
 

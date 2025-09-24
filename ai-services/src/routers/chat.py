@@ -25,6 +25,14 @@ class ChatRequest(BaseModel):
     message: str
     system_prompt: Optional[str] = None
     
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "message": "Hello! Who are you?",
+                "system_prompt": None  # This will make it appear as null in the Swagger UI
+            }
+        }
+    
 class ChatResponse(BaseModel):
     response: str
     
@@ -89,7 +97,18 @@ async def update_system_prompt(request: SystemPromptRequest):
             message=error_msg
         )
 
-# Chat endpoint
+# Basic message model for simplified chat
+class SimpleMessageRequest(BaseModel):
+    message: str
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "message": "Hello! Who are you?"
+            }
+        }
+
+# Chat endpoint with full options (system prompt optional)
 @router.post("/simple", response_model=ChatResponse)
 async def simple_chat(
     request: ChatRequest
@@ -114,6 +133,35 @@ async def simple_chat(
             
         # Create Gemini client with system prompt if provided
         gemini_client = get_gemini_client(system_prompt=request.system_prompt)
+        
+        # Get response from Gemini
+        response = gemini_client.chat(request.message)
+        
+        print(f"[CHAT] Response generated successfully")
+        return ChatResponse(response=response)
+        
+    except Exception as e:
+        error_msg = f"Chat processing failed: {str(e)}"
+        print(f"[CHAT] ❌ {error_msg}")
+        raise HTTPException(status_code=500, detail=error_msg)
+
+# Simplified chat endpoint (no system prompt option)
+@router.post("/message", response_model=ChatResponse)
+async def message_only_chat(
+    request: SimpleMessageRequest
+):
+    """
+    Simplified chat endpoint with Gemini
+    
+    This endpoint uses the default system prompt - just send your message!
+    
+    - **message**: Your message to Gemini
+    """
+    try:
+        print(f"[CHAT] Processing simplified message: '{request.message[:30]}...'")
+        
+        # Create Gemini client with default system prompt
+        gemini_client = get_gemini_client()
         
         # Get response from Gemini
         response = gemini_client.chat(request.message)

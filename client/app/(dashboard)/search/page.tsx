@@ -23,6 +23,7 @@ import {
   Share2
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import RagChat from "./RagChat";
 
 interface Document {
   id: string;
@@ -142,6 +143,9 @@ const DocumentSearchPage = () => {
           </Button>
         </div>
       </div>
+      
+      {/* RAG Chat Component */}
+      <RagChat />
 
       <div className="grid gap-6 lg:grid-cols-4">
         {/* Filters Sidebar */}

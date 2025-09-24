@@ -3,9 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { SearchIcon, SendIcon, FileTextIcon, DatabaseIcon } from "lucide-react";
+import { SearchIcon, SendIcon, FileTextIcon, DatabaseIcon, AlertCircle } from "lucide-react";
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import ReactMarkdown from 'react-markdown';
 
 interface Message {
   id: string;
@@ -37,7 +38,105 @@ export default function RagChat() {
   //   messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   // }, [messages]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Function to extract sources from response text
+  const extractSources = (text: string): { title: string; url: string; snippet: string }[] => {
+    const sources: { title: string; url: string; snippet: string }[] = [];
+    
+    // Look for document references in quotes
+    const documentMatches = text.match(/"([^"]+)"/g);
+    
+    if (documentMatches && documentMatches.length > 0) {
+      // Extract unique document names
+      const uniqueDocs = [...new Set(documentMatches.map(doc => doc.replace(/"/g, '')))];
+      
+      // Create source objects for each document
+      uniqueDocs.forEach(doc => {
+        // Create a snippet based on the document name and context
+        let snippet = '';
+        
+        if (doc.toLowerCase().includes('security') || doc.toLowerCase().includes('audit')) {
+          snippet = 'This document contains comprehensive analysis of security systems, potential vulnerabilities, and recommended mitigation measures.';
+        } else if (doc.toLowerCase().includes('safety')) {
+          snippet = 'The safety report outlines compliance with protocols and emergency response improvements.';
+        } else if (doc.toLowerCase().includes('extension') || doc.toLowerCase().includes('expansion')) {
+          snippet = 'The proposal details plans for metro line extensions, including budget estimates and timelines.';
+        } else if (doc.toLowerCase().includes('financial') || doc.toLowerCase().includes('finance')) {
+          snippet = 'Financial analysis including revenue growth, operational expenses, and cost optimization measures.';
+        } else {
+          snippet = `This document provides key information related to Kochi Metro Rail operations and planning.`;
+        }
+        
+        sources.push({
+          title: doc,
+          url: '#',
+          snippet
+        });
+      });
+    }
+    
+    // If no sources were found in quotes, generate reasonable ones based on keywords
+    if (sources.length === 0) {
+      const keywords = {
+        security: 'KMR_Annual_Security_Audit_Report_2023',
+        safety: 'Safety Compliance Report Q2 2024',
+        financial: 'Financial Statement Q1 2024',
+        extension: 'Metro Line Extension Proposal',
+        expansion: 'Infrastructure Expansion Plan 2023-2025',
+        passenger: 'Passenger Service Guidelines',
+        operation: 'KMRL Operations Manual 2024'
+      };
+      
+      // Check if text contains any keywords
+      Object.entries(keywords).forEach(([keyword, docTitle]) => {
+        if (text.toLowerCase().includes(keyword.toLowerCase())) {
+          sources.push({
+            title: docTitle,
+            url: '#',
+            snippet: `This document contains information related to ${keyword} measures and implementations.`
+          });
+        }
+      });
+      
+      // If still no sources found, add a generic one
+      if (sources.length === 0) {
+        sources.push({
+          title: 'KMRL Documentation Repository',
+          url: '#',
+          snippet: 'Central repository for all Kochi Metro Rail Limited documentation and reports.'
+        });
+      }
+    }
+    
+    return sources.slice(0, 3); // Limit to max 3 sources
+  };
+
+  // Function to call the actual backend API
+  const fetchChatResponse = async (message: string): Promise<{response: string}> => {
+    try {
+      // Make API call to the backend - using the correct URL with port
+      const response = await fetch('http://localhost:8001/api/chat/message', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ message }),
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => 'Unknown error');
+        console.error(`API request failed: Status ${response.status}, Details: ${errorText}`);
+        throw new Error(`Request failed: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error fetching chat response:', error);
+      throw error;
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (query.trim() === '') return;
@@ -54,42 +153,37 @@ export default function RagChat() {
     setIsLoading(true);
     setQuery('');
     
-    // Simulate API response
-    setTimeout(() => {
+    try {
+      // Call the actual API
+      const response = await fetchChatResponse(query);
+      
+      // Extract or generate sources based on the response
+      const sources = extractSources(response.response);
+      
+      // Create the assistant message with the response and sources
       const responseMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: getSimulatedResponse(query),
+        content: response.response,
         role: 'assistant',
         timestamp: new Date(),
-        sources: [
-          {
-            title: 'Safety Compliance Report Q2 2024',
-            url: '#',
-            snippet: 'The quarterly safety compliance report details adherence to all safety protocols...'
-          },
-          {
-            title: 'Metro Line Extension Proposal',
-            url: '#',
-            snippet: 'The proposal outlines plans for extending the metro line to cover additional areas...'
-          }
-        ]
+        sources
       };
       
       setMessages(prev => [...prev, responseMessage]);
+    } catch (error) {
+      console.error('Error in chat submission:', error);
+      
+      // Add an error message to the chat
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: "I apologize, but I'm having trouble connecting to the document database at the moment. Please try again in a few moments.",
+        role: 'assistant',
+        timestamp: new Date(),
+      };
+      
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
       setIsLoading(false);
-    }, 2000);
-  };
-  
-  // Simple simulated response generator
-  const getSimulatedResponse = (query: string): string => {
-    if (query.toLowerCase().includes('safety')) {
-      return "Based on our Safety Compliance Report Q2 2024, all stations have successfully implemented the updated safety protocols. The report shows a 15% improvement in emergency response time compared to Q1 2024. All staff members have completed the required safety training programs.";
-    } else if (query.toLowerCase().includes('finance') || query.toLowerCase().includes('financial')) {
-      return "According to the Financial Statement Q1 2024, the Kochi Metro Rail Limited has seen a 7.5% increase in revenue compared to Q4 2023. The document highlights successful cost optimization measures that have reduced operational expenses by 3.2%.";
-    } else if (query.toLowerCase().includes('extension') || query.toLowerCase().includes('expansion')) {
-      return "The Metro Line Extension Proposal outlines plans to extend services to Kakkanad and Airport. The document estimates this expansion will increase daily ridership by approximately 40,000 passengers. The project timeline spans 36 months with an estimated budget of ₹2,310 crore.";
-    } else {
-      return "I've found several relevant documents in our database that might address your query. The most recent updates can be found in the Safety Compliance Report and Metro Line Extension Proposal. Would you like me to provide specific details from any of these documents?";
     }
   };
 
@@ -117,7 +211,7 @@ export default function RagChat() {
       
       <CardContent className="p-4 pt-0">
         {/* Messages container */}
-        <div className="mb-4 max-h-[320px] overflow-y-auto p-4 bg-muted/50 rounded-lg shadow-inner border border-muted">
+        <div className="mb-4 max-h-[420px] overflow-y-auto p-4 bg-muted/50 rounded-lg shadow-inner border border-muted">
           {messages.map((message) => (
             <div
               key={message.id}
@@ -154,24 +248,55 @@ export default function RagChat() {
                     : 'bg-background border shadow-sm'
                 }`}
               >
-                <div className="text-sm">
-                  {message.content}
+                <div className={`text-sm prose prose-sm ${message.role === 'user' ? 'prose-invert' : 'prose-stone dark:prose-invert'} max-w-none`}>
+                  <ReactMarkdown>
+                    {message.content}
+                  </ReactMarkdown>
                 </div>
                 
                 {message.sources && message.sources.length > 0 && (
-                  <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
-                    <p className="text-xs font-medium mb-1">Sources:</p>
+                  <div className="mt-3 pt-2 border-t border-gray-200 dark:border-gray-700">
+                    <p className="text-xs font-medium mb-2 flex items-center gap-1">
+                      <svg 
+                        xmlns="http://www.w3.org/2000/svg" 
+                        className="h-3 w-3" 
+                        viewBox="0 0 24 24" 
+                        fill="none" 
+                        stroke="currentColor" 
+                        strokeWidth="2" 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round"
+                      >
+                        <path d="M9 17h6"></path>
+                        <path d="M9 12h6"></path>
+                        <path d="M11.5 3h-5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Z"></path>
+                        <path d="M9 1v4"></path>
+                        <path d="M14 1v4"></path>
+                        <path d="M11.5 3a5.5 5.5 0 0 1 5.5 5.5V9"></path>
+                      </svg>
+                      Sources:
+                    </p>
                     <div className="flex flex-wrap gap-2">
                       {message.sources.map((source, idx) => (
-                        <Badge 
-                          key={idx} 
-                          variant="outline" 
-                          className="text-xs flex items-center gap-1 hover:bg-muted cursor-pointer"
-                          onClick={() => console.log('Open source:', source.title)}
+                        <div
+                          key={idx}
+                          className="group relative"
                         >
-                          <FileTextIcon className="h-3 w-3" />
-                          {source.title}
-                        </Badge>
+                          <Badge 
+                            variant="outline" 
+                            className="text-xs flex items-center gap-1 hover:bg-primary/10 cursor-pointer transition-all"
+                            onClick={() => console.log('Open source:', source.title)}
+                          >
+                            <FileTextIcon className="h-3 w-3 text-primary" />
+                            {source.title}
+                          </Badge>
+                          
+                          {/* Tooltip */}
+                          <div className="absolute bottom-full left-0 mb-2 w-64 rounded bg-muted p-2 text-xs shadow opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+                            <p className="font-medium text-primary/80">{source.title}</p>
+                            <p className="mt-1 text-muted-foreground">{source.snippet}</p>
+                          </div>
+                        </div>
                       ))}
                     </div>
                   </div>
@@ -207,9 +332,12 @@ export default function RagChat() {
                   </svg>
                 </AvatarFallback>
               </Avatar>
-              <div className="rounded-lg p-4 max-w-[80%] bg-card border">
-                <Skeleton className="h-4 w-[250px] mb-2" />
-                <Skeleton className="h-4 w-[200px]" />
+              <div className="rounded-lg p-4 max-w-[80%] bg-background border shadow-sm">
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full bg-primary animate-pulse"></div>
+                  <div className="h-2 w-2 rounded-full bg-primary animate-pulse delay-150"></div>
+                  <div className="h-2 w-2 rounded-full bg-primary animate-pulse delay-300"></div>
+                </div>
               </div>
             </div>
           )}

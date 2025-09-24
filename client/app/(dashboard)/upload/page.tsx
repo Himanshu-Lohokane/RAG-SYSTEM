@@ -87,6 +87,8 @@ interface UploadedFile {
   error?: string;
   result?: ProcessingResult;
   file?: File; // Store original file for processing
+  classificationStatus?: "loading" | "completed" | "error";
+  processingId?: string; // Store the processing ID for classification lookup
 }
 
 const DocumentUploadPage = () => {
@@ -113,6 +115,20 @@ const DocumentUploadPage = () => {
       }
     }
   }, [selectedFileResult]);
+  
+  // Update selected file when classification status changes
+  useEffect(() => {
+    if (selectedFileResult) {
+      // Find the latest version of this file in the files array
+      const updatedFile = files.find(file => file.id === selectedFileResult.id);
+      if (updatedFile && 
+          (updatedFile.classificationStatus !== selectedFileResult.classificationStatus ||
+           updatedFile.result?.classification !== selectedFileResult.result?.classification)) {
+        console.log('[DEBUG] Updating selected file with new classification data');
+        setSelectedFileResult(updatedFile);
+      }
+    }
+  }, [files, selectedFileResult]);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -232,14 +248,13 @@ const DocumentUploadPage = () => {
       // Some APIs require boolean as string, others as actual boolean value
       formData.append('include_translation', 'true');
       formData.append('target_language', 'en');
-      formData.append('include_classification', 'true');
+      // Classification will be requested separately for better UX
       
       console.log('[DEBUG] FormData setup:', {
         file: fileData.name,
         ocr_method: 'document',
         include_translation: 'true', 
-        target_language: 'en',
-        include_classification: 'true'
+        target_language: 'en'
       });
 
       // Update progress
@@ -250,8 +265,8 @@ const DocumentUploadPage = () => {
       ));
 
       // Call comprehensive DataTrack KMRL Document Processing API
-      // This single endpoint handles OCR, language detection, translation and classification
-      const response = await fetch('http://localhost:8001/api/documents/process?ocr_method=document&include_translation=true&target_language=en&include_classification=true', {
+      // This single endpoint handles OCR, language detection, and translation (classification will be async)
+      const response = await fetch('http://localhost:8001/api/documents/process?ocr_method=document&include_translation=true&target_language=en', {
         method: 'POST',
         body: formData,
       });
@@ -277,11 +292,13 @@ const DocumentUploadPage = () => {
           : file
       ));
 
-      // Extract OCR, language detection, translation and classification from the comprehensive response
-      const { ocr, language_detection, translation, classification } = apiResult.data;
+      // Extract OCR, language detection, and translation from the comprehensive response
+      const { ocr, language_detection, translation } = apiResult.data;
+      const processingId = apiResult.data.processing_info.processing_id;
       
       console.log('[DEBUG] API Result:', apiResult.data);
       console.log('[DEBUG] Translation from API:', translation);
+      console.log('[DEBUG] Processing ID:', processingId);
       
       // Create a fallback translation if API returns null for translation
       // This is temporary until the API translation issue is fixed
@@ -301,18 +318,21 @@ const DocumentUploadPage = () => {
         };
       }
       
-      // Complete processing with all results (OCR + language + translation)
+      // Complete processing with initial results (OCR + language + translation)
+      // Classification will be added asynchronously
       setFiles(prev => prev.map(file => 
         file.id === fileId 
           ? { 
               ...file, 
               status: "completed", 
               progress: 100,
+              classificationStatus: "loading", // Mark classification as loading
+              processingId: processingId, // Store processing ID for classification lookup
               result: {
                 ocr: ocr,
                 language_detection: language_detection,
                 translation: translationData, // Use our translationData (API or fallback)
-                classification: classification, // Add classification result
+                classification: null, // Will be populated asynchronously
                 metadata: {
                   filename: fileData.name,
                   file_size: fileData.file.size,
@@ -328,8 +348,12 @@ const DocumentUploadPage = () => {
       
       toast({
         title: "OCR Processing Complete",
-        description: `Successfully processed ${fileData.name}. ${apiResult.data.character_count} characters extracted.`,
+        description: `Successfully processed ${fileData.name}. ${ocr.text.length} characters extracted.`,
       });
+      
+      // Now request classification asynchronously
+      // This doesn't block the UI since OCR results are already displayed
+      requestClassification(fileId, processingId, ocr.text, translationData?.translated_text);
 
     } catch (error) {
       console.error(`[UPLOAD] ❌ OCR processing failed for file ${fileId}:`, error);
@@ -348,6 +372,89 @@ const DocumentUploadPage = () => {
       toast({
         title: "OCR Processing Failed",
         description: `Failed to process file: ${error instanceof Error ? error.message : "Unknown error"}`,
+        variant: "destructive"
+      });
+    }
+  };
+
+  /**
+   * Request document classification asynchronously
+   * This function is called after the main OCR process completes
+   * to get classification without blocking the UI
+   */
+  const requestClassification = async (fileId: string, processingId: string, originalText: string, translatedText?: string) => {
+    console.log(`[UPLOAD] Starting async classification for file ID: ${fileId}`);
+    
+    try {
+      // Prepare request body
+      const reqBody = {
+        text: originalText,
+        translation: translatedText || null
+      };
+      
+      // Call the async classification endpoint
+      const response = await fetch(`http://localhost:8001/api/documents/classify/${processingId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(reqBody)
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Classification API error: ${response.status}`);
+      }
+      
+      const classificationResult = await response.json();
+      console.log(`[UPLOAD] Classification result received:`, classificationResult);
+      
+      if (classificationResult.success) {
+        // Update the file with classification results
+        setFiles(prev => {
+          const updatedFiles = prev.map(file => {
+            if (file.id === fileId && file.result) {
+              return {
+                ...file,
+                classificationStatus: "completed",
+                result: {
+                  ...file.result,
+                  classification: classificationResult.data.classification
+                }
+              };
+            }
+            return file;
+          });
+          
+          console.log(`[UPLOAD] ✅ Classification completed for file ID: ${fileId}`);
+          return updatedFiles;
+        });
+        
+        // Display toast notification when classification completes
+        toast({
+          title: "Classification Complete",
+          description: `Document identified as: ${classificationResult.data.classification.category}`,
+        });
+      } else {
+        throw new Error(classificationResult.data?.error || 'Classification failed');
+      }
+    } catch (error) {
+      console.error(`[UPLOAD] ❌ Classification failed for file ID: ${fileId}:`, error);
+      
+      // Update file with classification error
+      setFiles(prev => prev.map(file => {
+        if (file.id === fileId) {
+          return {
+            ...file,
+            classificationStatus: "error"
+          };
+        }
+        return file;
+      }));
+      
+      // Show error toast
+      toast({
+        title: "Classification Failed",
+        description: error instanceof Error ? error.message : "Failed to classify document",
         variant: "destructive"
       });
     }
@@ -509,7 +616,15 @@ const DocumentUploadPage = () => {
                                         <span>{file.result?.ocr?.confidence ? 
                                           (file.result.ocr.confidence * 100).toFixed(1) + '% confidence' : 
                                           'Processing...'}</span>
-                                        {file.result?.classification && (
+                                        {file.classificationStatus === "loading" ? (
+                                          <>
+                                            <span>•</span>
+                                            <span className="flex items-center animate-pulse">
+                                              <Clock className="h-3 w-3 mr-1" />
+                                              Analyzing...
+                                            </span>
+                                          </>
+                                        ) : file.result?.classification && (
                                           <>
                                             <span>•</span>
                                             <span className="flex items-center">
@@ -588,12 +703,33 @@ const DocumentUploadPage = () => {
                 
                 {selectedFileResult.result && (
                   <>
-                    {/* Document Classification */}
-                    {selectedFileResult.result.classification && (
-                      <div className="flex justify-center">
-                        {(() => {
+                    {/* Document Classification - with loading state */}
+                    <div className="flex justify-center">
+                      {(() => {
+                        // Show loading state if classification is in progress
+                        if (selectedFileResult.classificationStatus === "loading") {
+                          return (
+                            <div className="bg-blue-50 text-blue-800 rounded-full px-4 py-1.5 flex items-center gap-2 shadow-sm animate-pulse">
+                              <Clock className="h-4 w-4" />
+                              <span className="font-medium">Analyzing document type...</span>
+                            </div>
+                          );
+                        }
+                        
+                        // Show error state if classification failed
+                        if (selectedFileResult.classificationStatus === "error") {
+                          return (
+                            <div className="bg-gray-100 text-gray-800 rounded-full px-4 py-1.5 flex items-center gap-2 shadow-sm">
+                              <AlertCircle className="h-4 w-4" />
+                              <span className="font-medium">Classification unavailable</span>
+                            </div>
+                          );
+                        }
+                        
+                        // If we have classification results, show them
+                        if (selectedFileResult.result?.classification) {
                           // Determine badge variant based on category
-                          const category = selectedFileResult.result.classification?.category || '';
+                          const category = selectedFileResult.result.classification.category || '';
                           let badgeColor = "bg-slate-100 text-slate-800"; // Default
                           
                           if (category.includes('Safety') || category.includes('Incident')) {
@@ -613,7 +749,7 @@ const DocumentUploadPage = () => {
                           return (
                             <div className={`${badgeColor} rounded-full px-4 py-1.5 flex items-center gap-2 shadow-sm`}>
                               <Tag className="h-4 w-4" />
-                              <span className="font-medium">{selectedFileResult.result.classification?.category}</span>
+                              <span className="font-medium">{selectedFileResult.result.classification.category}</span>
                               <span className="text-xs opacity-75">
                                 {selectedFileResult.result.classification?.confidence ? 
                                   `${(selectedFileResult.result.classification.confidence * 100).toFixed(0)}% match` : 
@@ -621,9 +757,12 @@ const DocumentUploadPage = () => {
                               </span>
                             </div>
                           );
-                        })()}
-                      </div>
-                    )}
+                        }
+                        
+                        // If no classification status, show empty placeholder
+                        return null;
+                      })()}
+                    </div>
                     
                     {/* OCR Stats */}
                     <div className="grid grid-cols-2 gap-4 text-sm">

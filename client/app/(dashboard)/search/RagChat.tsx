@@ -32,10 +32,10 @@ export default function RagChat() {
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Scroll to bottom whenever messages change
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  // Auto-scroll disabled
+  // useEffect(() => {
+  //   messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  // }, [messages]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,16 +94,19 @@ export default function RagChat() {
   };
 
   return (
-    <div className="w-full bg-card rounded-lg shadow-sm border mb-6">
+    <div className="w-full bg-card rounded-lg shadow-md border-2 border-primary/10 mb-6 relative overflow-hidden" style={{ 
+      backgroundImage: `radial-gradient(circle at 1px 1px, rgba(59, 130, 246, 0.06) 1px, transparent 0)`,
+      backgroundSize: '20px 20px'
+    }}>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="text-xl flex items-center gap-2">
               <DatabaseIcon className="h-5 w-5 text-primary" />
-              Document AI Assistant
+              Advanced RAG Document Assistant
             </CardTitle>
             <CardDescription>
-              Search across all documents with natural language queries
+              Search across all documents with powerful AI-driven knowledge retrieval
             </CardDescription>
           </div>
           <Badge variant="outline" className="text-xs bg-primary/5 hover:bg-primary/10">
@@ -114,7 +117,7 @@ export default function RagChat() {
       
       <CardContent className="p-4 pt-0">
         {/* Messages container */}
-        <div className="mb-4 max-h-[320px] overflow-y-auto p-4 bg-muted/30 rounded-lg">
+        <div className="mb-4 max-h-[320px] overflow-y-auto p-4 bg-muted/50 rounded-lg shadow-inner border border-muted">
           {messages.map((message) => (
             <div
               key={message.id}
@@ -123,17 +126,32 @@ export default function RagChat() {
               }`}
             >
               {message.role === 'assistant' && (
-                <Avatar className="h-8 w-8 mr-2">
+                <Avatar className="h-8 w-8 mr-2 bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-600 shadow-md">
                   <AvatarImage src="/logos/kmrl-logo-square.png" alt="KMRL Assistant" />
-                  <AvatarFallback>KM</AvatarFallback>
+                  <AvatarFallback className="text-xs font-medium bg-gradient-to-br from-blue-600 to-indigo-700 text-white">
+                    <svg 
+                      xmlns="http://www.w3.org/2000/svg" 
+                      className="h-5 w-5" 
+                      viewBox="0 0 24 24" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      strokeWidth="2" 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round"
+                    >
+                      <circle cx="12" cy="12" r="10"/>
+                      <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                      <path d="M12 17h.01"/>
+                    </svg>
+                  </AvatarFallback>
                 </Avatar>
               )}
               
               <div
                 className={`rounded-lg p-3 max-w-[80%] ${
                   message.role === 'user'
-                    ? 'bg-primary text-white'
-                    : 'bg-card border'
+                    ? 'bg-primary text-white shadow-sm'
+                    : 'bg-background border shadow-sm'
                 }`}
               >
                 <div className="text-sm">
@@ -161,8 +179,8 @@ export default function RagChat() {
               </div>
               
               {message.role === 'user' && (
-                <Avatar className="h-8 w-8 ml-2">
-                  <AvatarFallback>US</AvatarFallback>
+                <Avatar className="h-8 w-8 ml-2 border-2 border-primary/20 shadow-sm">
+                  <AvatarFallback className="bg-muted text-muted-foreground text-xs font-medium">YOU</AvatarFallback>
                 </Avatar>
               )}
             </div>
@@ -170,9 +188,24 @@ export default function RagChat() {
           
           {isLoading && (
             <div className="flex mb-4 justify-start">
-              <Avatar className="h-8 w-8 mr-2">
+              <Avatar className="h-8 w-8 mr-2 bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-600 shadow-md">
                 <AvatarImage src="/logos/kmrl-logo-square.png" alt="KMRL Assistant" />
-                <AvatarFallback>KM</AvatarFallback>
+                <AvatarFallback className="text-xs font-medium bg-gradient-to-br from-blue-600 to-indigo-700 text-white">
+                  <svg 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    className="h-5 w-5" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="2" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round"
+                  >
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                    <path d="M12 17h.01"/>
+                  </svg>
+                </AvatarFallback>
               </Avatar>
               <div className="rounded-lg p-4 max-w-[80%] bg-card border">
                 <Skeleton className="h-4 w-[250px] mb-2" />
@@ -187,23 +220,24 @@ export default function RagChat() {
         {/* Input form */}
         <form onSubmit={handleSubmit} className="flex gap-2">
           <Input
-            placeholder="Search documents: How are safety protocols implemented in stations?"
+            placeholder="Ask about your documents (e.g., 'Summarize safety protocols in stations')"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="flex-1"
             disabled={isLoading}
           />
-          <Button type="submit" disabled={isLoading}>
+          <Button 
+            type="submit" 
+            disabled={isLoading}
+            className="bg-primary hover:bg-primary/90 px-3 aspect-square"
+          >
             {isLoading ? (
-              <span className="flex items-center gap-1">
+              <span className="flex items-center">
                 <span className="animate-spin rounded-full h-4 w-4 border-t-2 border-white"></span>
                 <span className="sr-only">Searching...</span>
               </span>
             ) : (
-              <>
-                <SearchIcon className="mr-2 h-4 w-4" />
-                Search
-              </>
+              <SendIcon className="h-4 w-4" />
             )}
           </Button>
         </form>

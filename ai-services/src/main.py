@@ -244,6 +244,7 @@ async def translate_text(
         raise HTTPException(500, error_msg)
 
 # Complete Document Processing Endpoint
+# One single endpoint to handle OCR, language detection, and optional translation along with classification (classification integration within this function endpoint is pending)
 @app.post("/api/documents/process")
 async def process_document(
     file: UploadFile = File(...),
@@ -330,114 +331,6 @@ async def process_document(
         print(f"[API] ❌ {error_msg}")
         raise HTTPException(500, error_msg)
 
-
-# Document Classification Endpoints
-
-# Simple text classification endpoint - perfect for Swagger UI
-@app.post("/api/classification/text")
-async def classify_text_api(
-    text: str = Body(..., description="The text content to classify", example="This is a sample document about safety procedures for equipment operation"),
-    classification_service: ClassificationService = Depends(get_classification_service)
-):
-    """
-    Simply paste your text here to classify it
-    
-    Returns the document category with confidence score
-    """
-    try:
-        # Process the document
-        print(f"[API] Classifying text with length: {len(text)}")
-        start_time = time.time()
-        classification_result = classification_service.classify_document(text)
-        total_processing_time = time.time() - start_time
-        
-        # Return simple result
-        print(f"[API] ✅ Document classification completed - Category: {classification_result['category']}")
-        return {
-            "success": True,
-            "data": {
-                "processing_time_seconds": round(total_processing_time, 3),
-                "classification": {
-                    "category": classification_result["category"],
-                    "confidence": classification_result["confidence"],
-                    "all_categories": classification_result["all_categories"],
-                    "processing_time_seconds": classification_result.get("processing_time_seconds", 0),
-                    "method": classification_result.get("method", "unknown")
-                },
-                "text_preview": text[:200] + "..." if len(text) > 200 else text
-            }
-        }
-    except Exception as e:
-        print(f"[API] ❌ Classification error: {str(e)}")
-        return {
-            "success": False,
-            "error": f"Classification failed: {str(e)}"
-        }
-
-# Document-based classification endpoint (with OCR)
-@app.post("/api/classification/document")
-async def classify_document(
-    file: UploadFile = File(...),
-    vision_service: VisionService = Depends(get_vision_service),
-    classification_service: ClassificationService = Depends(get_classification_service)
-):
-    """
-    Extract text using OCR and classify the document into predefined KMRL categories
-    
-    - **file**: The document file to classify (image)
-    """
-    print(f"[API] Classification request received - File: {file.filename}")
-    
-    try:
-        # Validate file
-        if not file.content_type.startswith('image/'):
-            raise HTTPException(400, f"Invalid file type: {file.content_type}. Only images are supported.")
-        
-        # Read file content
-        image_data = await file.read()
-        start_time = time.time()
-        
-        # Extract text using OCR
-        print(f"[API] Step 1/2: Extracting text for classification...")
-        ocr_result = vision_service.extract_text(image_data, method="document")
-        
-        if ocr_result.error:
-            raise HTTPException(500, f"Text extraction failed: {ocr_result.error}")
-        
-        # Classify the document based on extracted text
-        print(f"[API] Step 2/2: Classifying document...")
-        classification_result = classification_service.classify_document(ocr_result.text)
-        
-        total_processing_time = time.time() - start_time
-        
-        # Return classification results
-        print(f"[API] ✅ Document classification completed - Category: {classification_result['category']}")
-        return {
-            "success": True,
-            "data": {
-                "filename": file.filename,
-                "file_size": len(image_data),
-                "content_type": file.content_type,
-                "processing_time_seconds": round(total_processing_time, 3),
-                "classification": classification_result,
-                "text_preview": ocr_result.text[:200] + "..." if len(ocr_result.text) > 200 else ocr_result.text
-            }
-        }
-    except HTTPException as he:
-        raise he
-    except Exception as e:
-        print(f"[API] ❌ Classification error: {str(e)}")
-        return {
-            "success": False,
-            "error": f"Classification failed: {str(e)}"
-        }
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        error_msg = f"Error classifying document: {str(e)}"
-        print(f"[API] ❌ {error_msg}")
-        raise HTTPException(500, error_msg)
 
 # Error handlers
 @app.exception_handler(404)

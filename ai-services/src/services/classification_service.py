@@ -48,6 +48,8 @@ GOOGLE_TO_KMRL_CATEGORY_MAPPING = {
     "/Science/Engineering": "Engineering Drawings",
     "/Business/Manufacturing": "Engineering Drawings",
     "/Science/Technology": "Engineering Drawings",
+    "/Science/Engineering & Technology": "Engineering Drawings",
+    "/Arts & Entertainment/Visual Art & Design": "Engineering Drawings",
     
     # Maintenance
     "/Business/Industrial Goods & Services": "Maintenance job cards",
@@ -83,11 +85,20 @@ GOOGLE_TO_KMRL_CATEGORY_MAPPING = {
     "/Health/Health & Safety": "Safety circulars",
     "/Law & Government/Public Safety": "Safety circulars",
     "/Health/Medical Facilities & Services": "Safety circulars",
+    "/Health/Public Health/Occupational Health & Safety": "Safety circulars",
     
     # HR
     "/Business/Business Operations/Human Resources": "HR policies",
     "/Jobs & Education": "HR policies",
     "/People & Society": "HR policies",
+    "/Business & Industrial/Business Operations/Human Resources": "HR policies",
+    "/Business & Industrial/Business Operations": "HR policies",  # Keep this but improve the matching logic
+    
+    # Financial
+    "/Finance": "Vendor invoices",
+    "/News/Business News": "Vendor invoices",
+    "/Business & Industrial/Accounting & Finance": "Vendor invoices",
+    "/Business & Industrial": "Vendor invoices",  # Keep as fallback but improve the matching logic
     
     # Legal
     "/Law & Government/Legal": "Legal opinions",
@@ -146,6 +157,7 @@ class ClassificationService:
         """Initialize the classification service with Google Cloud Natural Language client"""
         self.language_client = None
         self.use_google_api = False
+        self.current_text = ""  # Store the current text being processed
         
         # Attempt to initialize the Language API client with existing credentials
         # from the same configuration used by other services
@@ -180,16 +192,35 @@ class ClassificationService:
         # Dictionary to track scores for KMRL categories
         kmrl_scores = {category: 0.0 for category in DOCUMENT_CATEGORIES}
         
+        # Special handling for HR vs Financial documents
+        hr_keywords = ["human resources", "employee", "leave", "policy", "staff", "personnel"]
+        financial_keywords = ["financial", "revenue", "expense", "budget", "invoice", "payment", "fiscal"]
+        
         # Process each Google category
         for category_data in google_categories:
             google_category = category_data.name
             confidence = category_data.confidence
             
+            # Check for special cases based on category
+            if google_category == "/Business & Industrial/Business Operations":
+                # This category could be HR or Financial - check document content
+                is_hr = any(kw in self.current_text.lower() for kw in hr_keywords)
+                is_financial = any(kw in self.current_text.lower() for kw in financial_keywords)
+                
+                if is_hr and not is_financial:
+                    kmrl_scores["HR policies"] += confidence * 1.2  # Boost HR confidence
+                    continue
+                elif is_financial and not is_hr:
+                    kmrl_scores["Vendor invoices"] += confidence * 1.2  # Boost Financial confidence
+                    continue
+            
             # Find matching KMRL categories from the mapping
             for google_pattern, kmrl_category in GOOGLE_TO_KMRL_CATEGORY_MAPPING.items():
                 if google_pattern in google_category:
                     # Add the confidence score to the matching KMRL category
-                    kmrl_scores[kmrl_category] += confidence
+                    # Give higher weight to more specific (longer) patterns
+                    specificity_boost = len(google_pattern) / 20  # Longer patterns get higher boost
+                    kmrl_scores[kmrl_category] += confidence * (1 + specificity_boost)
         
         # Find the KMRL category with the highest score
         best_category = max(kmrl_scores.items(), key=lambda x: x[1])
@@ -362,6 +393,9 @@ class ClassificationService:
                 "processing_time_seconds": time.time() - start_time,
                 "method": "none"
             }
+        
+        # Store the current text for use in classification logic
+        self.current_text = text
         
         # Trim text if too long (Google API has a limit)
         # The limit is 100KB, but we'll use a lower threshold to be safe

@@ -251,8 +251,10 @@ async def process_document(
     ocr_method: str = "document",
     target_language: str = "en",
     include_translation: bool = False,
+    include_classification: bool = False,
     vision_service: VisionService = Depends(get_vision_service),
-    translation_service: TranslationService = Depends(get_translation_service)
+    translation_service: TranslationService = Depends(get_translation_service),
+    classification_service: ClassificationService = Depends(get_classification_service)
 ):
     """
     Complete document processing workflow for KMRL documents
@@ -261,6 +263,7 @@ async def process_document(
     - **ocr_method**: 'document' (recommended) or 'text'
     - **target_language**: Language for translation (if enabled)
     - **include_translation**: Whether to include translation in processing
+    - **include_classification**: Whether to include document classification in processing
     """
     processing_id = str(uuid.uuid4())
     print(f"[API] Document processing started - ID: {processing_id}, File: {file.filename}")
@@ -275,14 +278,14 @@ async def process_document(
         start_time = time.time()
         
         # Step 1: OCR Processing
-        print(f"[API] Step 1/3: OCR processing...")
+        print(f"[API] Step 1/4: OCR processing...")
         ocr_result = vision_service.extract_text(image_data, method=ocr_method)
         
         if ocr_result.error:
             raise HTTPException(500, f"OCR failed: {ocr_result.error}")
         
         # Step 2: Language Detection
-        print(f"[API] Step 2/3: Language detection...")
+        print(f"[API] Step 2/4: Language detection...")
         language_detection = translation_service.detect_language(ocr_result.text)
         
         if language_detection.error:
@@ -292,14 +295,57 @@ async def process_document(
         # Step 3: Translation (if requested)
         translation_result = None
         if include_translation and ocr_result.text:
-            print(f"[API] Step 3/3: Translation processing...")
+            print(f"[API] Step 3/4: Translation processing...")
             translation_result = translation_service.translate_text(
                 ocr_result.text, target_language
             )
             if translation_result.error:
                 print(f"[API] ⚠️ Translation warning: {translation_result.error}")
         else:
-            print(f"[API] Step 3/3: Translation skipped (not requested)")
+            print(f"[API] Step 3/4: Translation skipped (not requested)")
+        
+        # Step 4: Classification (if requested)
+        classification_result = None
+        if include_classification and ocr_result.text:
+            print(f"[API] Step 4/4: Document classification...")
+            
+            # Determine which text to use for classification
+            # Use translated text (in English) if available, otherwise use original text
+            text_for_classification = ocr_result.text
+            if translation_result and not translation_result.error and translation_result.target_language == 'en':
+                text_for_classification = translation_result.translated_text
+            
+            # Classify the document
+            try:
+                classification_data = classification_service.classify_document(text_for_classification)
+                
+                # Create DocumentClassificationResult object
+                from models.ocr_models import DocumentClassificationResult
+                classification_result = DocumentClassificationResult(
+                    category=classification_data['category'],
+                    category_name=classification_data['category'],  # Using the same value for now
+                    confidence=classification_data['confidence'],
+                    department=None,  # Could be derived from category in the future
+                    priority=None,    # Could be derived from category in the future
+                    error=None
+                )
+                print(f"[API] ✅ Document classified as: {classification_result.category} with confidence: {classification_result.confidence:.2f}")
+            except Exception as e:
+                error_msg = f"Document classification failed: {str(e)}"
+                print(f"[API] ⚠️ Classification warning: {error_msg}")
+                
+                # Create an error result
+                from models.ocr_models import DocumentClassificationResult
+                classification_result = DocumentClassificationResult(
+                    category="Unknown",
+                    category_name="Unknown",
+                    confidence=0.0,
+                    department=None,
+                    priority=None,
+                    error=error_msg
+                )
+        else:
+            print(f"[API] Step 4/4: Document classification skipped (not requested or no text available)")
         
         processing_time = time.time() - start_time
         
@@ -312,6 +358,7 @@ async def process_document(
             ocr_result=ocr_result,
             language_detection=language_detection,
             translation_result=translation_result,
+            classification_result=classification_result,
             processing_time_seconds=round(processing_time, 3),
             success=True,
             errors=[]

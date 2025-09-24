@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -23,7 +23,9 @@ import {
   Plus,
   Eye,
   Download,
-  Languages
+  Languages,
+  Tag,
+  Clipboard
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -53,14 +55,25 @@ interface TranslationResult {
   error: string | null;
 }
 
+interface ClassificationResult {
+  category: string;
+  category_name: string;
+  confidence: number;
+  department: string | null;
+  priority: string | null;
+  error: string | null;
+}
+
 interface ProcessingResult {
   ocr: OCRResult;
   language_detection: LanguageDetection;
   translation?: TranslationResult;  // Optional translation result
+  classification?: ClassificationResult;  // Optional classification result
   metadata: {
     filename: string;
     file_size: number;
     processed_at: string;
+    processing_time_seconds: number;
   };
 }
 
@@ -81,6 +94,25 @@ const DocumentUploadPage = () => {
   const [dragActive, setDragActive] = useState(false);
   const [selectedFileResult, setSelectedFileResult] = useState<UploadedFile | null>(null);
   const { toast } = useToast();
+  
+  // Debug logs for selected file result
+  useEffect(() => {
+    if (selectedFileResult) {
+      console.log('[DEBUG] Selected file result:', selectedFileResult);
+      
+      if (selectedFileResult.result) {
+        console.log('[DEBUG] Result structure:', selectedFileResult.result);
+        
+        if (selectedFileResult.result.translation) {
+          console.log('[DEBUG] Translation data:', selectedFileResult.result.translation);
+        }
+        
+        if (selectedFileResult.result.classification) {
+          console.log('[DEBUG] Classification data:', selectedFileResult.result.classification);
+        }
+      }
+    }
+  }, [selectedFileResult]);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -200,12 +232,14 @@ const DocumentUploadPage = () => {
       // Some APIs require boolean as string, others as actual boolean value
       formData.append('include_translation', 'true');
       formData.append('target_language', 'en');
+      formData.append('include_classification', 'true');
       
       console.log('[DEBUG] FormData setup:', {
         file: fileData.name,
         ocr_method: 'document',
         include_translation: 'true', 
-        target_language: 'en'
+        target_language: 'en',
+        include_classification: 'true'
       });
 
       // Update progress
@@ -216,8 +250,8 @@ const DocumentUploadPage = () => {
       ));
 
       // Call comprehensive DataTrack KMRL Document Processing API
-      // This single endpoint handles OCR, language detection and translation
-      const response = await fetch('http://localhost:8001/api/documents/process?ocr_method=document&include_translation=true&target_language=en', {
+      // This single endpoint handles OCR, language detection, translation and classification
+      const response = await fetch('http://localhost:8001/api/documents/process?ocr_method=document&include_translation=true&target_language=en&include_classification=true', {
         method: 'POST',
         body: formData,
       });
@@ -243,8 +277,8 @@ const DocumentUploadPage = () => {
           : file
       ));
 
-      // Extract OCR, language detection and translation from the comprehensive response
-      const { ocr, language_detection, translation } = apiResult.data;
+      // Extract OCR, language detection, translation and classification from the comprehensive response
+      const { ocr, language_detection, translation, classification } = apiResult.data;
       
       console.log('[DEBUG] API Result:', apiResult.data);
       console.log('[DEBUG] Translation from API:', translation);
@@ -278,6 +312,7 @@ const DocumentUploadPage = () => {
                 ocr: ocr,
                 language_detection: language_detection,
                 translation: translationData, // Use our translationData (API or fallback)
+                classification: classification, // Add classification result
                 metadata: {
                   filename: fileData.name,
                   file_size: fileData.file.size,
@@ -474,6 +509,15 @@ const DocumentUploadPage = () => {
                                         <span>{file.result?.ocr?.confidence ? 
                                           (file.result.ocr.confidence * 100).toFixed(1) + '% confidence' : 
                                           'Processing...'}</span>
+                                        {file.result?.classification && (
+                                          <>
+                                            <span>•</span>
+                                            <span className="flex items-center">
+                                              <Tag className="h-3 w-3 mr-1" />
+                                              {file.result.classification.category}
+                                            </span>
+                                          </>
+                                        )}
                                       </>
                                     )}
                                   </div>
@@ -539,16 +583,48 @@ const DocumentUploadPage = () => {
                 <CardDescription>{selectedFileResult.name}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Debug logs to help diagnose result structure */}
-                <div className="hidden">
-                  {/* Hidden container to avoid React warnings about console.log not returning a React node */}
-                  {selectedFileResult && console.log('[DEBUG] Selected file result:', selectedFileResult)}
-                  {selectedFileResult?.result && console.log('[DEBUG] Result structure:', selectedFileResult.result)}
-                  {selectedFileResult?.result?.translation && console.log('[DEBUG] Translation data:', selectedFileResult.result.translation)}
-                </div>
+                {/* Debug logs handled with useEffect instead of in render */}
+                {/* Logs are removed to avoid React node warnings */}
                 
                 {selectedFileResult.result && (
                   <>
+                    {/* Document Classification */}
+                    {selectedFileResult.result.classification && (
+                      <div className="flex justify-center">
+                        {(() => {
+                          // Determine badge variant based on category
+                          const category = selectedFileResult.result.classification?.category || '';
+                          let badgeColor = "bg-slate-100 text-slate-800"; // Default
+                          
+                          if (category.includes('Safety') || category.includes('Incident')) {
+                            badgeColor = "bg-red-100 text-red-800"; // Safety/incidents - red
+                          } else if (category.includes('Engineering') || category.includes('Maintenance')) {
+                            badgeColor = "bg-blue-100 text-blue-800"; // Engineering - blue
+                          } else if (category.includes('HR') || category.includes('Legal')) {
+                            badgeColor = "bg-purple-100 text-purple-800"; // HR/Legal - purple
+                          } else if (category.includes('Purchase') || category.includes('Vendor') || category.includes('invoices')) {
+                            badgeColor = "bg-green-100 text-green-800"; // Financial - green
+                          } else if (category.includes('Environmental')) {
+                            badgeColor = "bg-emerald-100 text-emerald-800"; // Environmental - emerald
+                          } else if (category.includes('Regulatory') || category.includes('Board')) {
+                            badgeColor = "bg-amber-100 text-amber-800"; // Regulatory - amber
+                          }
+                          
+                          return (
+                            <div className={`${badgeColor} rounded-full px-4 py-1.5 flex items-center gap-2 shadow-sm`}>
+                              <Tag className="h-4 w-4" />
+                              <span className="font-medium">{selectedFileResult.result.classification?.category}</span>
+                              <span className="text-xs opacity-75">
+                                {selectedFileResult.result.classification?.confidence ? 
+                                  `${(selectedFileResult.result.classification.confidence * 100).toFixed(0)}% match` : 
+                                  ''}
+                              </span>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    )}
+                    
                     {/* OCR Stats */}
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>

@@ -20,7 +20,7 @@ from services.classification_service import ClassificationService
 from models.ocr_models import KMRLDocumentProcessingResult, OCRResult, LanguageDetectionResult
 
 # Import routers
-from routers import classify
+from routers import classify, chat
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -33,6 +33,7 @@ app = FastAPI(
 
 # Include routers
 app.include_router(classify.router)
+app.include_router(chat.router)
 
 # CORS middleware for frontend integration
 app.add_middleware(
@@ -78,7 +79,8 @@ async def root():
             "translation": "/api/translation/translate",
             "full_processing": "/api/documents/process",
             "classification": "/api/classification/document",
-            "supported_languages": "/api/languages"
+            "supported_languages": "/api/languages",
+            "chat": "/api/chat/simple"
         }
     }
 
@@ -424,7 +426,7 @@ async def not_found_handler(request, exc):
             "available_endpoints": [
                 "/docs", "/health", "/api/ocr/extract-text", 
                 "/api/documents/process", "/api/languages", 
-                "/api/classification/document"
+                "/api/classification/document", "/api/chat/simple"
             ]
         }
     )

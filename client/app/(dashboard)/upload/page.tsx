@@ -649,14 +649,31 @@ const DocumentUploadPage = () => {
                                 <div className="flex items-center gap-4 mt-1">
                                   {/* Badges in one row */}
                                   <div className="flex gap-1 flex-wrap flex-1">
-                                    {/* Status Badge */}
-                                    <Badge 
-                                      variant={file.status === "completed" ? "default" : file.status === "error" ? "destructive" : "secondary"}
-                                      className="text-xs"
-                                    >
-                                      <StatusIcon className="h-3 w-3 mr-1" />
-                                      {file.status}
-                                    </Badge>
+                                    {/* Document Type Badge (replacing status badge) */}
+                                    {file.status === "completed" ? (
+                                      <Badge 
+                                        variant="outline"
+                                        className={`text-xs ${
+                                          file.type.includes('pdf') ? 'bg-red-100 text-red-800 hover:bg-red-100' : 
+                                          file.type.includes('doc') ? 'bg-blue-100 text-blue-800 hover:bg-blue-100' : 
+                                          file.type.includes('image') ? 'bg-green-100 text-green-800 hover:bg-green-100' : 
+                                          'bg-slate-100 text-slate-800 hover:bg-slate-100'
+                                        }`}
+                                      >
+                                        {file.type.includes('pdf') ? 'pdf' : 
+                                        file.type.includes('doc') ? 'doc' : 
+                                        file.type.includes('image') ? 'image' : 
+                                        'file'}
+                                      </Badge>
+                                    ) : (
+                                      <Badge 
+                                        variant={file.status === "error" ? "destructive" : "secondary"}
+                                        className="text-xs"
+                                      >
+                                        <StatusIcon className="h-3 w-3 mr-1" />
+                                        {file.status}
+                                      </Badge>
+                                    )}
                                     
                                     {/* Language Badge */}
                                     {file.result?.language_detection && (
@@ -713,7 +730,7 @@ const DocumentUploadPage = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <FileText className="h-5 w-5" />
-                  OCR Results
+                  Results
                 </CardTitle>
                 <CardDescription>{selectedFileResult.name}</CardDescription>
               </CardHeader>

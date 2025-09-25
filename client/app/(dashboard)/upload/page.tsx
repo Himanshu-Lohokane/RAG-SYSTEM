@@ -598,21 +598,37 @@ const DocumentUploadPage = () => {
                             }
                           }}
                         >
-                          <div className="p-4">
+                          <div className="p-2">
                             {/* Main card content with proper spacing */}
-                            <div className="flex gap-4">
+                            <div className="flex gap-2">
                               {/* File Icon */}
-                              <div className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center flex-shrink-0">
-                                <FileIcon className="h-5 w-5 text-muted-foreground" />
+                              <div className="w-8 h-8 bg-muted rounded-md flex items-center justify-center flex-shrink-0">
+                                <FileIcon className="h-4 w-4 text-muted-foreground" />
                               </div>
                               
                               {/* File details with proper width constraints */}
                               <div className="flex-1 min-w-0">
-                                {/* File name and basic info */}
-                                <div className="mb-1 flex justify-between items-start">
-                                  <p className="text-sm font-medium truncate pr-16">{file.name}</p>
+                                {/* Top row with filename, metadata and remove button */}
+                                <div className="flex justify-between items-center">
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium truncate">{file.name}</p>
+                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                      <span>{formatFileSize(file.size)}</span>
+                                      {file.result?.ocr && (
+                                        <>
+                                          <span>•</span>
+                                          <span>{file.result.ocr.character_count || 0} chars</span>
+                                          <span>•</span>
+                                          <span>{file.result?.ocr?.confidence ? 
+                                            (file.result.ocr.confidence * 100).toFixed(1) + '% confidence' : 
+                                            'Processing...'}
+                                          </span>
+                                        </>
+                                      )}
+                                    </div>
+                                  </div>
                                   
-                                  {/* Remove button aligned to the right */}
+                                  {/* Remove button */}
                                   <div 
                                     onClick={(e) => {
                                       e.stopPropagation(); // Prevent card click
@@ -629,78 +645,56 @@ const DocumentUploadPage = () => {
                                   </div>
                                 </div>
                                 
-                                {/* File metadata - clearly visible and separated */}
-                                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground mb-3">
-                                  <span>{formatFileSize(file.size)}</span>
-                                  {file.result?.ocr && (
-                                    <>
-                                      <span>•</span>
-                                      <span>{file.result.ocr.character_count || 0} chars</span>
-                                      <span>•</span>
-                                      <span>{file.result?.ocr?.confidence ? 
-                                        (file.result.ocr.confidence * 100).toFixed(1) + '% confidence' : 
-                                        'Processing...'}
-                                      </span>
-                                    </>
-                                  )}
-                                </div>
-                                
-                                {/* Status badges row */}
-                                <div className="flex gap-2 mb-3 flex-wrap">
-                                  {/* Status Badge */}
-                                  <Badge 
-                                    variant={file.status === "completed" ? "default" : file.status === "error" ? "destructive" : "secondary"}
-                                    className="text-xs"
-                                  >
-                                    <StatusIcon className="h-3 w-3 mr-1" />
-                                    {file.status}
-                                  </Badge>
-                                  
-                                  {/* Language Badge */}
-                                  {file.result?.language_detection && (
-                                    <Badge variant="outline" className="text-xs">
-                                      <Languages className="h-3 w-3 mr-1" />
-                                      {file.result.language_detection.language_name}
+                                {/* Bottom row with status badges and progress bar */}
+                                <div className="flex items-center gap-4 mt-1">
+                                  {/* Badges in one row */}
+                                  <div className="flex gap-1 flex-wrap flex-1">
+                                    {/* Status Badge */}
+                                    <Badge 
+                                      variant={file.status === "completed" ? "default" : file.status === "error" ? "destructive" : "secondary"}
+                                      className="text-xs"
+                                    >
+                                      <StatusIcon className="h-3 w-3 mr-1" />
+                                      {file.status}
                                     </Badge>
-                                  )}
-                                  
-                                  {/* Classification Badge or Loading State */}
-                                  {file.classificationStatus === "loading" ? (
-                                    <Badge variant="outline" className="text-xs animate-pulse">
-                                      <Clock className="h-3 w-3 mr-1" />
-                                      Analyzing...
-                                    </Badge>
-                                  ) : file.result?.classification && (
-                                    <Badge variant="secondary" className="text-xs">
-                                      <Tag className="h-3 w-3 mr-1" />
-                                      {file.result.classification.category}
-                                    </Badge>
-                                  )}
-                                </div>
-                                
-                                {/* Progress Bar */}
-                                <div className="space-y-1">
-                                  <div className="flex items-center justify-between text-xs">
-                                    <span className="text-muted-foreground">
-                                      {file.status === "uploading" ? "Uploading..." : 
-                                       file.status === "processing" ? "Processing OCR..." :
-                                       file.status === "completed" ? "OCR Completed" : 
-                                       file.error || "Error"}
-                                    </span>
-                                    <span className="font-medium">{file.progress}%</span>
+                                    
+                                    {/* Language Badge */}
+                                    {file.result?.language_detection && (
+                                      <Badge variant="outline" className="text-xs">
+                                        <Languages className="h-3 w-3 mr-1" />
+                                        {file.result.language_detection.language_name}
+                                      </Badge>
+                                    )}
+                                    
+                                    {/* Classification Badge or Loading State */}
+                                    {file.classificationStatus === "loading" ? (
+                                      <Badge variant="outline" className="text-xs animate-pulse">
+                                        <Clock className="h-3 w-3 mr-1" />
+                                        Analyzing...
+                                      </Badge>
+                                    ) : file.result?.classification && (
+                                      <Badge variant="secondary" className="text-xs">
+                                        <Tag className="h-3 w-3 mr-1" />
+                                        {file.result.classification.category}
+                                      </Badge>
+                                    )}
                                   </div>
-                                  <Progress value={file.progress} className="h-2" />
+                                  
+                                  {/* View details indicator - inline with badges */}
+                                  {file.status === "completed" && file.result && (
+                                    <div className="text-xs text-primary flex items-center opacity-70 whitespace-nowrap">
+                                      <Eye className="h-3 w-3 mr-1" />
+                                      View
+                                    </div>
+                                  )}
+                                </div>
+                                
+                                {/* Progress Bar - always at the bottom */}
+                                <div className="mt-1">
+                                  <Progress value={file.progress} className="h-1.5" />
                                 </div>
                               </div>
                             </div>
-                            
-                            {/* View details indicator for completed files */}
-                            {file.status === "completed" && file.result && (
-                              <div className="mt-2 text-right text-xs text-primary flex items-center justify-end opacity-70">
-                                <Eye className="h-3 w-3 mr-1" />
-                                View details
-                              </div>
-                            )}
                           </div>
                         </Card>
                       );
@@ -824,6 +818,28 @@ const DocumentUploadPage = () => {
                             'N/A'}
                         </p>
                       </div>
+                    </div>
+                    
+                    {/* Document Type */}
+                    <div className="space-y-2">
+                      <h4 className="font-medium flex items-center gap-2">
+                        <FileText className="h-4 w-4" />
+                        Document Type
+                      </h4>
+                      <Badge 
+                        variant="outline"
+                        className={`text-xs ${
+                          selectedFileResult.type.includes('pdf') ? 'bg-red-100 text-red-800 hover:bg-red-100' : 
+                          selectedFileResult.type.includes('doc') ? 'bg-blue-100 text-blue-800 hover:bg-blue-100' : 
+                          selectedFileResult.type.includes('image') ? 'bg-green-100 text-green-800 hover:bg-green-100' : 
+                          'bg-slate-100 text-slate-800 hover:bg-slate-100'
+                        }`}
+                      >
+                        {selectedFileResult.type.includes('pdf') ? 'PDF Document' : 
+                         selectedFileResult.type.includes('doc') ? 'Word Document' : 
+                         selectedFileResult.type.includes('image') ? 'Image File' : 
+                         selectedFileResult.type.split('/')[1]?.toUpperCase() || 'Unknown File Type'}
+                      </Badge>
                     </div>
 
                     {/* Language Detection */}

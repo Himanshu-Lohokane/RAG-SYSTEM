@@ -241,7 +241,7 @@ class ClassificationService:
             Classification results dictionary
         """
         if not HAS_GOOGLE_LANGUAGE:
-            logging.error("Google Cloud Language API not available")
+            print("[CLASS] Google Cloud Language API not available")
             return None
             
         try:
@@ -250,11 +250,13 @@ class ClassificationService:
                 content=text,
                 type_=language_v1.Document.Type.PLAIN_TEXT
             )
+            print(f"[CLASS] Created document for classification, text length: {len(text)}")
             
             # Use content classification from Natural Language API
             try:
+                print("[CLASS] Calling Google Natural Language API classify_text...")
                 response = self.language_client.classify_text(document=document)
-                logging.info("Google Cloud Natural Language API classification successful!")
+                print("[CLASS] Google Cloud Natural Language API classification successful!")
             except Exception as e:
                 logging.error(f"Google API classification failed: {e}")
                 # If this is a SERVICE_DISABLED error, provide more specific guidance

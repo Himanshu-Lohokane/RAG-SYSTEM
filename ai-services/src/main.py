@@ -20,7 +20,7 @@ from services.classification_service import ClassificationService
 from models.ocr_models import KMRLDocumentProcessingResult, OCRResult, LanguageDetectionResult
 
 # Import routers
-from routers import classify, chat
+from routers import classify, chat, document, extract, ocr
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -34,6 +34,9 @@ app = FastAPI(
 # Include routers
 app.include_router(classify.router)
 app.include_router(chat.router)
+app.include_router(document.router)
+app.include_router(extract.router)
+app.include_router(ocr.router)
 
 # CORS middleware for frontend integration
 app.add_middleware(

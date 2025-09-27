@@ -177,6 +177,9 @@ storybook-static
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+!.vscode/settings.json
 .idea
 *.suo
 *.ntvs*
@@ -184,10 +187,10 @@ storybook-static
 *.sln
 *.sw?
 
-# Package manager lock files (keep only one)
-package-lock.json
-yarn.lock
-pnpm-lock.yaml
+# Package manager lock files (uncommenting the one you're using)
+# package-lock.json  # Uncomment if using npm
+yarn.lock  # Comment this if using yarn
+pnpm-lock.yaml  # Comment this if using pnpm
 
 # Local development
 .env.example.local
@@ -196,7 +199,7 @@ pnpm-lock.yaml
 *.h5
 *.pkl
 *.joblib
-models/
+# models/  # Commented out to allow necessary model files to be tracked
 weights/
 
 # Documentation build
@@ -218,10 +221,13 @@ env.bak/
 venv.bak/
 
 # AI services specific
-ai-services/models/
+# ai-services/models/  # Commented out to allow necessary model files to be tracked
 ai-services/weights/
-ai-services/data/raw/
-ai-services/data/processed/
+# ai-services/data/raw/  # Commented out to include sample data if needed
+# ai-services/data/processed/  # Commented out to include sample data if needed
+# Consider adding specific large files to ignore instead:
+# ai-services/data/raw/large-dataset.csv
+# ai-services/data/processed/full-dataset.parquet
 
 # Shared utilities build
 shared/dist/

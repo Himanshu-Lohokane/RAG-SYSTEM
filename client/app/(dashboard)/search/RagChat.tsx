@@ -114,7 +114,7 @@ export default function RagChat() {
   const fetchChatResponse = async (message: string): Promise<{response: string}> => {
     try {
       // Make API call to the backend - using the correct URL with port
-      const response = await fetch('http://localhost:8001/api/chat/message', {
+      const response = await fetch('https://rag-system-1-bakw.onrender.com/api/chat/message', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

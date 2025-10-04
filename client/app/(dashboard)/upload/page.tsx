@@ -277,7 +277,7 @@ const DocumentUploadPage = () => {
 
       // Call comprehensive DataTrack KMRL Document Processing API
       // This single endpoint handles OCR, language detection, and translation (classification will be async)
-      const response = await fetch('http://localhost:8001/api/documents/process?ocr_method=document&include_translation=true&target_language=en', {
+      const response = await fetch('https://rag-system-1-bakw.onrender.com/api/documents/process?ocr_method=document&include_translation=true&target_language=en', {
         method: 'POST',
         body: formData,
       });
@@ -404,7 +404,7 @@ const DocumentUploadPage = () => {
       };
       
       // Call the async classification endpoint
-      const response = await fetch(`http://localhost:8001/api/documents/classify/${processingId}`, {
+      const response = await fetch(`https://rag-system-1-bakw.onrender.com/api/documents/classify/${processingId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

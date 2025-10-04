@@ -11,6 +11,10 @@ from fastapi.responses import JSONResponse
 import sys
 import os
 
+# Load environment variables from .env file
+from dotenv import load_dotenv
+load_dotenv()
+
 # Add current directory to path for imports
 sys.path.append(os.path.dirname(__file__))
 

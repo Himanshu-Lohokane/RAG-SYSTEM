@@ -14,23 +14,6 @@ class Config:
     
     PROJECT_ID = "aiagent-465805"
     
-    @staticmethod
-    def get_credentials():
-        """Get Google Cloud credentials from environment variable"""
-        print("[CONFIG] Loading Google Cloud credentials for DataTrack-KMRL...")
-        
-        # Load from environment variable (required for security)
-        credentials_json = os.getenv('GOOGLE_APPLICATION_CREDENTIALS_JSON')
-        if not credentials_json:
-            raise ValueError("GOOGLE_APPLICATION_CREDENTIALS_JSON environment variable is required")
-        
-        try:
-            print("[CONFIG] Using credentials from environment variable")
-            credentials_dict = json.loads(credentials_json)
-            return service_account.Credentials.from_service_account_info(credentials_dict)
-        except (json.JSONDecodeError, ValueError) as e:
-            raise ValueError(f"Failed to parse credentials from environment: {e}")
-    
     # KMRL Specific Language Mappings (English + Malayalam focus)
     LANGUAGE_NAMES = {
         # KMRL Primary Languages
@@ -64,16 +47,35 @@ class Config:
     
     @classmethod
     def get_credentials(cls) -> service_account.Credentials:
-        """Get Google Cloud credentials from embedded config"""
+        """Get Google Cloud credentials from environment variable"""
         print("[CONFIG] Loading Google Cloud credentials for DataTrack-KMRL...")
-        return service_account.Credentials.from_service_account_info(cls.GOOGLE_CREDENTIALS)
+        
+        # Load from environment variable (required for security)
+        credentials_json = os.getenv('GOOGLE_APPLICATION_CREDENTIALS_JSON')
+        if not credentials_json:
+            raise ValueError("GOOGLE_APPLICATION_CREDENTIALS_JSON environment variable is required")
+        
+        try:
+            print("[CONFIG] Using credentials from environment variable")
+            credentials_dict = json.loads(credentials_json)
+            return service_account.Credentials.from_service_account_info(credentials_dict)
+        except (json.JSONDecodeError, ValueError) as e:
+            raise ValueError(f"Failed to parse credentials from environment: {e}")
     
     @classmethod
     def get_vision_client(cls) -> vision.ImageAnnotatorClient:
         """Get configured Vision API client for OCR processing"""
-        credentials = cls.get_credentials()
-        print("[CONFIG] Initializing Google Vision client...")
-        return vision.ImageAnnotatorClient(credentials=credentials)
+        try:
+            credentials = cls.get_credentials()
+            print("[CONFIG] Initializing Google Vision client...")
+            print(f"[CONFIG] Service account email: {credentials.service_account_email}")
+            print(f"[CONFIG] Project ID: {cls.PROJECT_ID}")
+            client = vision.ImageAnnotatorClient(credentials=credentials)
+            print("[CONFIG] ✅ Vision client created successfully")
+            return client
+        except Exception as e:
+            print(f"[CONFIG] ❌ Failed to create Vision client: {e}")
+            raise
     
     @classmethod
     def get_translate_client(cls) -> translate.Client:

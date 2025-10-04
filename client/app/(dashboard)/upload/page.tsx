@@ -343,7 +343,7 @@ const DocumentUploadPage = () => {
                 ocr: ocr,
                 language_detection: language_detection,
                 translation: translationData, // Use our translationData (API or fallback)
-                classification: null, // Will be populated asynchronously
+                classification: undefined, // Will be populated asynchronously
                 metadata: {
                   filename: fileData.name,
                   file_size: fileData.file.size,

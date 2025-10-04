@@ -23,6 +23,7 @@ import {
   Share2
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import RagChat from "./RagChat";
 
 interface Document {
   id: string;
@@ -131,17 +132,10 @@ const DocumentSearchPage = () => {
           <h1 className="text-3xl font-bold text-foreground">Document Search & Browse</h1>
           <p className="text-muted-foreground">Find and manage your documents efficiently</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline">
-            <Download className="h-4 w-4 mr-2" />
-            Export Results
-          </Button>
-          <Button>
-            <Filter className="h-4 w-4 mr-2" />
-            Advanced Filter
-          </Button>
-        </div>
       </div>
+      
+      {/* RAG Chat Component */}
+      <RagChat />
 
       <div className="grid gap-6 lg:grid-cols-4">
         {/* Filters Sidebar */}

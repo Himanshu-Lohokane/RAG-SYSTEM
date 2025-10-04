@@ -38,16 +38,12 @@ app.include_router(document.router)
 app.include_router(extract.router)
 app.include_router(ocr.router)
 
-# CORS middleware for frontend integration
+# CORS middleware for frontend integration - Allow all origins for now
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:8080", 
-        "http://localhost:3000",
-        "https://rag-system-client.vercel.app"  # Add your Vercel frontend
-    ],
-    allow_credentials=True,
-    allow_methods=["*"],
+    allow_origins=["*"],  # Allow all origins temporarily to debug
+    allow_credentials=False,  # Set to False when allowing all origins
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -69,6 +65,19 @@ def get_classification_service() -> ClassificationService:
     """Dependency injection for document classification service"""
     print("[API] Initializing Google Natural Language API classification service")
     return ClassificationService()
+
+# CORS preflight handler
+@app.options("/{full_path:path}")
+async def options_handler(request: Request):
+    """Handle CORS preflight requests"""
+    return JSONResponse(
+        content={},
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "Access-Control-Allow-Headers": "*",
+        }
+    )
 
 # Health check endpoints
 @app.get("/")

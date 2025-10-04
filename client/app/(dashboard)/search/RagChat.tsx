@@ -47,7 +47,7 @@ export default function RagChat() {
     
     if (documentMatches && documentMatches.length > 0) {
       // Extract unique document names
-      const uniqueDocs = [...new Set(documentMatches.map(doc => doc.replace(/"/g, '')))];
+      const uniqueDocs = Array.from(new Set(documentMatches.map(doc => doc.replace(/"/g, ''))));
       
       // Create source objects for each document
       uniqueDocs.forEach(doc => {

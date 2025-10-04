@@ -91,7 +91,9 @@ class EntityExtractionService:
     def __init__(self):
         """Initialize extraction services"""
         print("[EXTRACT] Initializing Google Cloud Natural Language client for entity extraction...")
-        self.nlp_client = language_v1.LanguageServiceClient()
+        from config.settings import Config
+        credentials = Config.get_credentials()
+        self.nlp_client = language_v1.LanguageServiceClient(credentials=credentials)
         print("[EXTRACT] ✅ Entity extraction service ready")
     
     def extract_entities(self, text: str, language: str = "en") -> EntityExtractionResult:

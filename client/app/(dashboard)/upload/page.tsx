@@ -335,9 +335,9 @@ const DocumentUploadPage = () => {
         file.id === fileId 
           ? { 
               ...file, 
-              status: "completed", 
+              status: "completed" as const, 
               progress: 100,
-              classificationStatus: "loading", // Mark classification as loading
+              classificationStatus: "loading" as const, // Mark classification as loading
               processingId: processingId, // Store processing ID for classification lookup
               result: {
                 ocr: ocr,
@@ -426,7 +426,7 @@ const DocumentUploadPage = () => {
             if (file.id === fileId && file.result) {
               return {
                 ...file,
-                classificationStatus: "completed",
+                classificationStatus: "completed" as const,
                 result: {
                   ...file.result,
                   classification: classificationResult.data.classification
@@ -456,7 +456,7 @@ const DocumentUploadPage = () => {
         if (file.id === fileId) {
           return {
             ...file,
-            classificationStatus: "error"
+            classificationStatus: "error" as const
           };
         }
         return file;

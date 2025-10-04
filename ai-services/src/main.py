@@ -41,7 +41,11 @@ app.include_router(ocr.router)
 # CORS middleware for frontend integration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8080", "http://localhost:3000"],  # Next.js dev server
+    allow_origins=[
+        "http://localhost:8080", 
+        "http://localhost:3000",
+        "https://rag-system-client.vercel.app"  # Add your Vercel frontend
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

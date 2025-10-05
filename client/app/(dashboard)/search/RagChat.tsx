@@ -23,7 +23,7 @@ export default function RagChat() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      content: 'Welcome to DocuMind AI! I\'m your intelligent media assistant. Ask me anything about your uploaded documents, images, videos, or audio files, and I\'ll help you find insights and answers.',
+      content: 'Welcome to DocuMind AI - powered by advanced Multi-modal RAG technology! I can analyze text, images, videos, and audio files simultaneously to provide comprehensive insights. Upload any type of media or ask questions about your existing documents.',
       role: 'assistant',
       timestamp: new Date(),
     },
@@ -226,9 +226,12 @@ export default function RagChat() {
             <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-600 flex items-center justify-center text-white font-bold text-lg shadow-lg">
               DM
             </div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
-              DocuMind AI
-            </h1>
+            <div className="text-center">
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                DocuMind AI
+              </h1>
+              <p className="text-sm text-muted-foreground mt-1">Advanced Multi-modal RAG Assistant</p>
+            </div>
           </div>
           <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
             <div className="flex items-center gap-1">
@@ -281,25 +284,14 @@ export default function RagChat() {
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {message.sources.map((source, idx) => (
-                        <div
+                        <Badge 
                           key={idx}
-                          className="group relative"
+                          variant="outline" 
+                          className="text-xs flex items-center gap-1"
                         >
-                          <Badge 
-                            variant="outline" 
-                            className="text-xs flex items-center gap-1 hover:bg-primary/10 cursor-pointer transition-all"
-                            onClick={() => console.log('Open source:', source.title)}
-                          >
-                            <FileTextIcon className="h-3 w-3 text-primary" />
-                            {source.title}
-                          </Badge>
-                          
-                          {/* Tooltip */}
-                          <div className="absolute bottom-full left-0 mb-2 w-64 rounded bg-popover p-2 text-xs shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10 border">
-                            <p className="font-medium text-popover-foreground">{source.title}</p>
-                            <p className="mt-1 text-muted-foreground">{source.snippet}</p>
-                          </div>
-                        </div>
+                          <FileTextIcon className="h-3 w-3 text-primary" />
+                          {source.title}
+                        </Badge>
                       ))}
                     </div>
                   </div>

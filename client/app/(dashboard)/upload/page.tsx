@@ -42,7 +42,7 @@ interface LanguageDetection {
   language_code: string;
   language_name: string;
   confidence: number;
-  is_kmrl_primary: boolean;
+  is_supported: boolean;
 }
 
 interface TranslationResult {
@@ -253,7 +253,7 @@ const DocumentUploadPage = () => {
       // Create FormData for comprehensive document processing
       const formData = new FormData();
       formData.append('file', fileData.file);
-      formData.append('ocr_method', 'document'); // Use document method (optimized for KMRL docs)
+      formData.append('ocr_method', 'document'); // Use document method for intelligent processing
       
       // Make sure we're using the correct parameter formats for translation
       // Some APIs require boolean as string, others as actual boolean value
@@ -275,7 +275,7 @@ const DocumentUploadPage = () => {
           : file
       ));
 
-      // Call comprehensive DataTrack KMRL Document Processing API
+      // Call comprehensive DocuMind AI Document Processing API
       // This single endpoint handles OCR, language detection, and translation (classification will be async)
       const response = await fetch('https://rag-system-1-bakw.onrender.com/api/documents/process?ocr_method=document&include_translation=true&target_language=en', {
         method: 'POST',
@@ -508,8 +508,8 @@ const DocumentUploadPage = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-foreground">DataTrack Document Processing</h1>
-        <p className="text-muted-foreground">Upload documents for AI-powered OCR, classification and analysis with English/Malayalam support</p>
+        <h1 className="text-3xl font-bold text-foreground">Document Processing</h1>
+        <p className="text-muted-foreground">Upload documents for AI-powered OCR, text extraction, and intelligent analysis with multi-language support</p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -541,7 +541,7 @@ const DocumentUploadPage = () => {
                     <Upload className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                     <h3 className="text-lg font-semibold mb-2">Drag and drop files here</h3>
                     <p className="text-muted-foreground mb-4">
-                      Upload documents for OCR text extraction and analysis
+                      Upload documents for intelligent text extraction and AI-powered analysis
                     </p>
                     <input
                       type="file"
@@ -565,12 +565,12 @@ const DocumentUploadPage = () => {
                 </CardContent>
               </Card>
 
-              {/* KMRL OCR Info */}
+              {/* Multi-modal Processing Info */}
               <Alert>
                 <Languages className="h-4 w-4" />
                 <AlertDescription>
-                  <strong>KMRL Document Processing:</strong> Supports image files (JPG, PNG), PDF documents and Word files (DOC, DOCX) with
-                  English and Malayalam text extraction. Optimized for documents, forms, and technical drawings.
+                  <strong>Multi-Modal AI Processing:</strong> Supports image files (JPG, PNG), PDF documents and Word files (DOC, DOCX) with
+                  intelligent text extraction and analysis. Optimized for documents, forms, and multi-language content.
                 </AlertDescription>
               </Alert>
 
@@ -867,11 +867,11 @@ const DocumentUploadPage = () => {
                           Detected Language
                         </h4>
                         <Badge 
-                          variant={selectedFileResult.result.language_detection.is_kmrl_primary ? "default" : "secondary"}
+                          variant={selectedFileResult.result.language_detection.confidence > 0.8 ? "default" : "secondary"}
                           className="text-xs"
                         >
                           {selectedFileResult.result.language_detection.language_name}
-                          {selectedFileResult.result.language_detection.is_kmrl_primary && " (KMRL Primary)"}
+                          {selectedFileResult.result.language_detection.confidence > 0.9 && " (High Confidence)"}
                         </Badge>
                       </div>
                     )}

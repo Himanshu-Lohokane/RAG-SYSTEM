@@ -4,6 +4,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 
 export default function DashboardLayout({
   children,
@@ -11,6 +12,10 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const [queryClient] = useState(() => new QueryClient());
+  const pathname = usePathname();
+  
+  // Check if current page is the AI assistant (search) page
+  const isAIAssistantPage = pathname?.endsWith('/search');
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -18,7 +23,7 @@ export default function DashboardLayout({
         <Navbar />
         <div className="flex">
           <Sidebar />
-          <main className="flex-1 p-6">
+          <main className={`flex-1 ${isAIAssistantPage ? 'p-0' : 'p-6'}`}>
             {children}
           </main>
         </div>

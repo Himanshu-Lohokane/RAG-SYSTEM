@@ -1,23 +1,24 @@
-# DataTrack - KMRL Document Management System
+# DocuMind AI - Intelligent Document Processing
 
-A comprehensive document management system for Kochi Metro Rail Limited (KMRL) featuring AI-powered document processing, compliance tracking, and enterprise-grade security.
+A personal multi-modal AI agent for intelligent document processing, OCR, and knowledge extraction. Upload documents, extract text, and chat with your documents using advanced AI capabilities.
 
 ## Features
 
-- Document upload and management
-- AI-powered document processing
-- Compliance tracking
-- User management
-- Analytics dashboard
-- Real-time notifications
+- Multi-format document support (PDF, DOC, DOCX, Images)
+- AI-powered OCR text extraction
+- Multi-language processing and translation
+- Intelligent document chat interface
+- RAG (Retrieval Augmented Generation)
+- Secure document processing
 
 ## Tech Stack
 
+- Next.js 15.5.3
 - React 18.3.1
 - TypeScript
-- Vite
 - Tailwind CSS
 - shadcn/ui components
+- Radix UI primitives
 
 ## Getting Started
 
@@ -31,5 +32,5 @@ A comprehensive document management system for Kochi Metro Rail Limited (KMRL) f
 1. Clone the repository
 ```bash
 git clone <your-repo-url>
-cd kmrl-datatrack-hub
+cd documind-ai
 ```

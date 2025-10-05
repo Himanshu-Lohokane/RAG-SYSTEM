@@ -88,10 +88,10 @@ async def options_handler(request: Request):
 async def root():
     """Root endpoint with service information"""
     return {
-        "service": "DataTrack KMRL - OCR & Document Processing API",
+        "service": "DocuMind AI - Multimedia Document Processing API",
         "version": "1.0.0",
         "status": "operational",
-        "description": "AI-powered document processing for Kochi Metro Rail Limited",
+        "description": "AI-powered document, image, video, and audio analysis system",
         "endpoints": {
             "health": "/health",
             "ocr_only": "/api/ocr/extract-text",
@@ -102,6 +102,23 @@ async def root():
             "supported_languages": "/api/languages",
             "chat_advanced": "/api/chat/simple",
             "chat_simple": "/api/chat/message"
+        }
+    }
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for deployment monitoring"""
+    return {
+        "status": "healthy",
+        "service": "DocuMind AI",
+        "timestamp": datetime.now().isoformat(),
+        "version": "1.0.0",
+        "capabilities": {
+            "video_analysis": True,
+            "audio_analysis": True,
+            "document_ocr": True,
+            "image_processing": True,
+            "chat_assistant": True
         }
     }
 
@@ -266,175 +283,7 @@ async def translate_text(
         print(f"[API] ❌ {error_msg}")
         raise HTTPException(500, error_msg)
 
-# Complete Document Processing Endpoint
-# One single endpoint to handle OCR, language detection, and optional translation along with classification (classification integration within this function endpoint is pending)
-@app.post("/api/documents/process")
-async def process_document(
-    file: UploadFile = File(...),
-    ocr_method: str = "document",
-    target_language: str = "en",
-    include_translation: bool = False,
-    vision_service: VisionService = Depends(get_vision_service),
-    translation_service: TranslationService = Depends(get_translation_service)
-):
-    """
-    Complete document processing workflow for KMRL documents
-    
-    - **file**: Document image file
-    - **ocr_method**: 'document' (recommended) or 'text'
-    - **target_language**: Language for translation (if enabled)
-    - **include_translation**: Whether to include translation in processing
-    
-    Note: Classification is performed asynchronously via a separate endpoint
-    """
-    processing_id = str(uuid.uuid4())
-    print(f"[API] Document processing started - ID: {processing_id}, File: {file.filename}")
-    
-    try:
-        # Validate file
-        if not file.content_type.startswith('image/'):
-            raise HTTPException(400, f"Invalid file type: {file.content_type}")
-        
-        # Read image data
-        image_data = await file.read()
-        start_time = time.time()
-        
-        # Step 1: OCR Processing
-        print(f"[API] Step 1/3: OCR processing...")
-        ocr_result = vision_service.extract_text(image_data, method=ocr_method)
-        
-        if ocr_result.error:
-            raise HTTPException(500, f"OCR failed: {ocr_result.error}")
-        
-        # Step 2: Language Detection
-        print(f"[API] Step 2/3: Language detection...")
-        language_detection = translation_service.detect_language(ocr_result.text)
-        
-        if language_detection.error:
-            # Non-fatal error - continue processing
-            print(f"[API] ⚠️ Language detection warning: {language_detection.error}")
-        
-        # Step 3: Translation (if requested)
-        translation_result = None
-        if include_translation and ocr_result.text:
-            print(f"[API] Step 3/3: Translation processing...")
-            translation_result = translation_service.translate_text(
-                ocr_result.text, target_language
-            )
-            if translation_result.error:
-                print(f"[API] ⚠️ Translation warning: {translation_result.error}")
-        else:
-            print(f"[API] Step 3/3: Translation skipped (not requested)")
-        
-        processing_time = time.time() - start_time
-        
-        # Build complete result
-        result = KMRLDocumentProcessingResult(
-            filename=file.filename,
-            file_size=len(image_data),
-            upload_timestamp=datetime.now().isoformat(),
-            processing_id=processing_id,
-            ocr_result=ocr_result,
-            language_detection=language_detection,
-            translation_result=translation_result,
-            classification_result=None,  # Classification is done asynchronously
-            processing_time_seconds=round(processing_time, 3),
-            success=True,
-            errors=[]
-        )
-        
-        print(f"[API] ✅ Document processing completed successfully in {processing_time:.2f}s")
-        
-        return {
-            "success": True,
-            "data": result.to_dict()
-        }
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        error_msg = f"Document processing failed: {str(e)}"
-        print(f"[API] ❌ {error_msg}")
-        raise HTTPException(500, error_msg)
-
-
-# Async Document Classification Endpoint
-@app.post("/api/documents/classify/{processing_id}")
-async def classify_document(
-    processing_id: str,
-    text: str = Body(...),
-    translation: str = Body(None),
-    classification_service: ClassificationService = Depends(get_classification_service)
-):
-    """
-    Asynchronous document classification endpoint
-    
-    - **processing_id**: The ID of the document being processed
-    - **text**: The original text content
-    - **translation**: Optional translated text (preferred for classification)
-    """
-    start_time = time.time()
-    print(f"[API] Starting async classification for document ID: {processing_id}")
-    
-    try:
-        # Determine which text to use for classification
-        # Use translated text (in English) if available, otherwise use original text
-        text_for_classification = text
-        if translation:
-            text_for_classification = translation
-            print(f"[API] Using translated text for classification")
-        
-        # Classify the document
-        classification_data = classification_service.classify_document(text_for_classification)
-        
-        # Create DocumentClassificationResult object
-        from models.ocr_models import DocumentClassificationResult
-        classification_result = DocumentClassificationResult(
-            category=classification_data['category'],
-            category_name=classification_data['category'],  # Using the same value for now
-            confidence=classification_data['confidence'],
-            department=None,  # Could be derived from category in the future
-            priority=None,    # Could be derived from category in the future
-            error=None
-        )
-        
-        processing_time = time.time() - start_time
-        print(f"[API] ✅ Document classified as: {classification_result.category} with confidence: {classification_result.confidence:.2f}")
-        print(f"[API] Classification completed in {processing_time:.2f}s")
-        
-        return {
-            "success": True,
-            "data": {
-                "processing_id": processing_id,
-                "classification": classification_result.to_dict(),
-                "processing_time_seconds": round(processing_time, 3)
-            }
-        }
-    
-    except Exception as e:
-        error_msg = f"Document classification failed: {str(e)}"
-        print(f"[API] ❌ {error_msg}")
-        
-        # Create an error result
-        from models.ocr_models import DocumentClassificationResult
-        classification_result = DocumentClassificationResult(
-            category="Unknown",
-            category_name="Unknown",
-            confidence=0.0,
-            department=None,
-            priority=None,
-            error=error_msg
-        )
-        
-        return {
-            "success": False,
-            "data": {
-                "processing_id": processing_id,
-                "classification": classification_result.to_dict(),
-                "error": error_msg
-            }
-        }
-
+# Note: Document processing and classification endpoints are handled by the OCR router
 # Error handlers
 @app.exception_handler(404)
 async def not_found_handler(request, exc):
@@ -467,26 +316,38 @@ async def internal_error_handler(request, exc):
 @app.on_event("startup")
 async def startup_event():
     print("=" * 60)
-    print("🚀 DataTrack KMRL - OCR & Document Processing API")
+    print("🚀 DocuMind AI - Multimedia Document Processing API")
     print("=" * 60)
     print("✅ Server starting up...")
     print("✅ Google Cloud Vision API ready")
     print("✅ Google Cloud Translation API ready")
+    print("✅ Gemini AI ready for video/audio analysis")
     print("✅ CORS configured for frontend integration")
     print(f"✅ Upload directory ready: {UPLOAD_DIR}")
     print("=" * 60)
-    print("📚 API Documentation: http://localhost:8001/docs")
-    print("🏥 Health Check: http://localhost:8001/health")
-    print("🔄 Main Processing: http://localhost:8001/api/documents/process")
+    port = int(os.getenv("PORT", 8001))
+    if os.getenv("RENDER"):
+        base_url = "https://rag-system-1-bakw.onrender.com"
+    else:
+        base_url = f"http://localhost:{port}"
+    
+    print(f"📚 API Documentation: {base_url}/docs")
+    print(f"🏥 Health Check: {base_url}/health")
+    print(f"🔄 Main Processing: {base_url}/api/documents/process")
+    print(f"🎬 Video/Audio Analysis: Ready")
     print("=" * 60)
 
 if __name__ == "__main__":
     import uvicorn
     print("[SERVER] Starting DataTrack KMRL OCR API server...")
+    
+    # Get port from environment variable (for Render deployment) or use default
+    port = int(os.getenv("PORT", 8001))
+    
     uvicorn.run(
         app, 
         host="0.0.0.0", 
-        port=8001,
+        port=port,
         log_level="info",
-        reload=True  # Enable auto-reload during development
+        reload=False  # Disable auto-reload for production
     )

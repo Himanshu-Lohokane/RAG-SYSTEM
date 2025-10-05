@@ -23,7 +23,7 @@ export default function RagChat() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      content: 'Welcome to DocuMind AI! I\'m your intelligent media assistant. Ask me anything about your uploaded documents, images, videos, or audio files, and I\'ll help you find insights and answers.',
+      content: 'Welcome to DocuMind AI - powered by advanced Multi-modal RAG technology! I can analyze text, images, videos, and audio files simultaneously to provide comprehensive insights. Upload any type of media or ask questions about your existing documents.',
       role: 'assistant',
       timestamp: new Date(),
     },
@@ -226,9 +226,12 @@ export default function RagChat() {
             <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-600 flex items-center justify-center text-white font-bold text-lg shadow-lg">
               DM
             </div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
-              DocuMind AI
-            </h1>
+            <div className="text-center">
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                DocuMind AI
+              </h1>
+              <p className="text-sm text-muted-foreground mt-1">Advanced Multi-modal RAG Assistant</p>
+            </div>
           </div>
           <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
             <div className="flex items-center gap-1">

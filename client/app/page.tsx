@@ -30,13 +30,13 @@ export default function HomePage() {
       <main className="max-w-6xl mx-auto px-6 py-16">
         <div className="text-center mb-16">
           <h1 className="text-5xl font-bold text-gray-900 mb-6">
-            Your Personal
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600"> AI Document</span>
-            <br />Processing Assistant
+            Advanced Multi-modal
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600"> RAG-Powered</span>
+            <br />AI Assistant
           </h1>
           <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-            Upload, process, and chat with your documents using advanced AI. Extract text, translate languages, 
-            and get intelligent insights from any document format.
+            Experience cutting-edge multi-modal RAG (Retrieval Augmented Generation) technology. Process documents, 
+            images, videos, and audio files with state-of-the-art AI for comprehensive analysis and insights.
           </p>
           <div className="flex gap-4 justify-center">
             <Link href="/upload">
@@ -61,9 +61,9 @@ export default function HomePage() {
               <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
                 <FileText className="h-6 w-6 text-blue-600" />
               </div>
-              <CardTitle>Multi-Format Support</CardTitle>
+              <CardTitle>Multi-modal RAG</CardTitle>
               <CardDescription>
-                Process images (JPG, PNG), PDFs, and Word documents with intelligent OCR technology
+                Advanced RAG technology that processes text, images, video, and audio for comprehensive document understanding
               </CardDescription>
             </CardHeader>
           </Card>
@@ -73,9 +73,9 @@ export default function HomePage() {
               <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
                 <Languages className="h-6 w-6 text-purple-600" />
               </div>
-              <CardTitle>Multi-Language AI</CardTitle>
+              <CardTitle>Cross-Modal Intelligence</CardTitle>
               <CardDescription>
-                Detect languages automatically and translate content with advanced language processing
+                Seamlessly analyze relationships between text, visuals, and audio content for deeper insights
               </CardDescription>
             </CardHeader>
           </Card>
@@ -85,9 +85,9 @@ export default function HomePage() {
               <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
                 <Search className="h-6 w-6 text-green-600" />
               </div>
-              <CardTitle>Intelligent Chat</CardTitle>
+              <CardTitle>Contextual Understanding</CardTitle>
               <CardDescription>
-                Ask questions about your documents and get AI-powered answers with source references
+                Advanced retrieval system that understands context across different media types for accurate responses
               </CardDescription>
             </CardHeader>
           </Card>
@@ -102,8 +102,8 @@ export default function HomePage() {
                 <Zap className="h-4 w-4 text-blue-600" />
               </div>
               <div>
-                <h3 className="font-semibold mb-2">Lightning Fast Processing</h3>
-                <p className="text-gray-600">Advanced OCR and AI processing for quick document analysis and text extraction</p>
+                <h3 className="font-semibold mb-2">Advanced Multi-modal Processing</h3>
+                <p className="text-gray-600">State-of-the-art RAG system that processes text, images, video, and audio simultaneously</p>
               </div>
             </div>
             <div className="flex items-start gap-4">
@@ -111,8 +111,8 @@ export default function HomePage() {
                 <Shield className="h-4 w-4 text-purple-600" />
               </div>
               <div>
-                <h3 className="font-semibold mb-2">Secure & Private</h3>
-                <p className="text-gray-600">Your documents are processed securely with industry-standard encryption</p>
+                <h3 className="font-semibold mb-2">Secure Enterprise RAG</h3>
+                <p className="text-gray-600">Enterprise-grade security with encrypted vector storage and secure multi-modal processing</p>
               </div>
             </div>
           </div>

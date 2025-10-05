@@ -91,7 +91,7 @@ async def root():
         "service": "DocuMind AI - Multimedia Document Processing API",
         "version": "1.0.0",
         "status": "operational",
-        "description": "AI-powered document, image, video, and audio analysis system",
+        "description": "AI-powered document, image, video, and audio anax system",
         "endpoints": {
             "health": "/health",
             "ocr_only": "/api/ocr/extract-text",

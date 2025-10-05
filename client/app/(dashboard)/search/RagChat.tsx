@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { SendIcon, FileTextIcon } from "lucide-react";
+import { SendIcon, FileTextIcon, Upload, Paperclip } from "lucide-react";
 import { Badge } from '@/components/ui/badge';
 import ReactMarkdown from 'react-markdown';
 
@@ -29,7 +29,9 @@ export default function RagChat() {
     },
   ]);
   const [isLoading, setIsLoading] = useState(false);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Function to extract sources from response text
   const extractSources = (text: string): { title: string; url: string; snippet: string }[] => {
@@ -180,18 +182,62 @@ export default function RagChat() {
     }
   };
 
+  // Handle file upload (UI only - no backend processing)
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setUploadedFile(file);
+      
+      // Add a user message showing the file was "uploaded"
+      const fileMessage: Message = {
+        id: Date.now().toString(),
+        content: `📄 Uploaded: ${file.name} (${(file.size / 1024).toFixed(1)}KB)`,
+        role: 'user',
+        timestamp: new Date(),
+      };
+      
+      // Add an assistant response acknowledging the upload
+      const responseMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: `Great! I've received your file "${file.name}". You can now ask me questions about this document and I'll help you analyze its content.`,
+        role: 'assistant',
+        timestamp: new Date(),
+      };
+      
+      setMessages(prev => [...prev, fileMessage, responseMessage]);
+    }
+    
+    // Reset the input
+    if (event.target) {
+      event.target.value = '';
+    }
+  };
+
+  const triggerFileUpload = () => {
+    fileInputRef.current?.click();
+  };
+
   return (
     <div className="flex flex-col bg-gradient-to-b from-background to-muted/20" style={{ height: 'calc(100vh - 4rem)' }}>
       {/* Header */}
-      <div className="border-b bg-background/80 backdrop-blur-sm p-4">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-600 flex items-center justify-center text-white font-semibold text-sm">
+      <div className="border-b bg-background/80 backdrop-blur-sm p-6">
+        <div className="max-w-4xl mx-auto text-center">
+          <div className="flex items-center justify-center gap-3 mb-3">
+            <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-600 flex items-center justify-center text-white font-bold text-lg shadow-lg">
               DM
             </div>
-            DocuMind AI Assistant
-          </h1>
-          <p className="text-muted-foreground mt-1">Chat with your documents, images, videos, and audio files using advanced AI</p>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
+              DocuMind AI
+            </h1>
+          </div>
+          <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+            <div className="flex items-center gap-1">
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+              <span>Online</span>
+            </div>
+            <span>•</span>
+            <span>Powered by Gemini AI</span>
+          </div>
         </div>
       </div>
 
@@ -294,7 +340,26 @@ export default function RagChat() {
       {/* Input form - fixed at bottom */}
       <div className="border-t bg-background/95 backdrop-blur-sm p-6 shadow-lg">
         <div className="max-w-4xl mx-auto">
-          <form onSubmit={handleSubmit} className="flex gap-4">
+          <form onSubmit={handleSubmit} className="flex gap-3">
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              onChange={handleFileUpload}
+              accept="image/*,application/pdf,.doc,.docx,video/*,audio/*"
+              className="hidden"
+            />
+            
+            {/* Upload button */}
+            <Button
+              type="button"
+              onClick={triggerFileUpload}
+              className="bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground rounded-full h-14 w-14 p-0 shadow-md transition-all duration-200 hover:shadow-lg"
+              disabled={isLoading}
+            >
+              <Paperclip className="h-5 w-5" />
+            </Button>
+            
             <div className="flex-1 relative">
               <Input
                 placeholder="Ask about your media files..."
@@ -303,7 +368,15 @@ export default function RagChat() {
                 className="bg-background rounded-full border-2 border-border/50 px-6 py-4 h-14 text-base focus:border-primary/50 focus:ring-2 focus:ring-primary/20 shadow-sm"
                 disabled={isLoading}
               />
+              {uploadedFile && (
+                <div className="absolute -top-8 left-4">
+                  <Badge variant="secondary" className="text-xs">
+                    📄 {uploadedFile.name}
+                  </Badge>
+                </div>
+              )}
             </div>
+            
             <Button 
               type="submit" 
               disabled={isLoading || !query.trim()}

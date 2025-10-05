@@ -16,14 +16,14 @@ import {
 
 const navigationItems = [
   {
-    title: "Upload Documents",
-    href: "/upload",
-    icon: Upload,
-  },
-  {
     title: "AI Assistant",
     href: "/search",
     icon: Search,
+  },
+  {
+    title: "Upload Documents",
+    href: "/upload",
+    icon: Upload,
   },
 ];
 
@@ -31,8 +31,8 @@ export const Sidebar = () => {
   const pathname = usePathname();
 
   return (
-    <aside className="w-64 border-r bg-card h-[calc(100vh-4rem)]">
-      <nav className="p-4 space-y-2">
+    <aside className="w-64 border-r bg-gradient-to-b from-card to-background h-[calc(100vh-4rem)] shadow-md">
+      <nav className="p-6 space-y-4">
         {navigationItems.map((item) => {
           const isActive = pathname === item.href;
           return (
@@ -40,14 +40,27 @@ export const Sidebar = () => {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors",
+                "group flex items-center gap-4 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 relative overflow-hidden",
+                "hover:scale-105 transform",
                 isActive
-                  ? "bg-primary text-primary-foreground font-medium"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                  ? "bg-primary text-primary-foreground shadow-lg"
+                  : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
               )}
             >
-              <item.icon className="h-4 w-4" />
-              {item.title}
+              <div className={cn(
+                "absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity",
+                "bg-gradient-to-r from-primary to-primary/50"
+              )} />
+              <item.icon className={cn(
+                "h-5 w-5 transition-transform duration-200",
+                "group-hover:rotate-6 group-hover:scale-110"
+              )} />
+              <span className="relative z-10 tracking-wide">
+                {item.title}
+              </span>
+              {isActive && (
+                <div className="absolute right-2 w-1.5 h-1.5 rounded-full bg-primary-foreground/80" />
+              )}
             </Link>
           );
         })}

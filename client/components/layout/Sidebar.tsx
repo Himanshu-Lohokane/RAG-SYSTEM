@@ -16,39 +16,14 @@ import {
 
 const navigationItems = [
   {
-    title: "Dashboard",
-    href: "/dashboard",
-    icon: LayoutDashboard,
-  },
-  {
     title: "Upload Documents",
     href: "/upload",
     icon: Upload,
   },
   {
-    title: "Search & Browse",
+    title: "AI Assistant",
     href: "/search",
     icon: Search,
-  },
-  {
-    title: "Compliance",
-    href: "/compliance",
-    icon: Shield,
-  },
-  {
-    title: "Analytics",
-    href: "/analytics",
-    icon: BarChart3,
-  },
-  {
-    title: "User Management",
-    href: "/users",
-    icon: Users,
-  },
-  {
-    title: "Settings",
-    href: "/settings",
-    icon: Settings,
   },
 ];
 

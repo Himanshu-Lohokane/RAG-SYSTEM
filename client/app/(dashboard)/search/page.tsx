@@ -129,8 +129,8 @@ const DocumentSearchPage = () => {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Document Search & Browse</h1>
-          <p className="text-muted-foreground">Find and manage your documents efficiently</p>
+          <h1 className="text-3xl font-bold text-foreground">AI Document Assistant</h1>
+          <p className="text-muted-foreground">Chat with your documents and discover insights with AI-powered search</p>
         </div>
       </div>
       

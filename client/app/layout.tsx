@@ -8,13 +8,13 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'DataTrack - KMRL Document Management System',
-  description: 'Comprehensive document management system for Kochi Metro Rail Limited (KMRL)',
-  keywords: 'document management, KMRL, Kochi Metro, compliance tracking',
-  authors: [{ name: 'KMRL' }],
+  title: 'DocuMind AI - Intelligent Document Processing',
+  description: 'Personal multi-modal AI agent for intelligent document processing, OCR, and knowledge extraction',
+  keywords: 'AI document processing, OCR, multi-modal AI, RAG, knowledge extraction, personal AI assistant',
+  authors: [{ name: 'DocuMind AI' }],
   openGraph: {
-    title: 'DataTrack - KMRL Document Management System',
-    description: 'Comprehensive document management system for Kochi Metro Rail Limited',
+    title: 'DocuMind AI - Intelligent Document Processing',
+    description: 'Personal multi-modal AI agent for intelligent document processing and knowledge extraction',
     type: 'website',
   },
 }

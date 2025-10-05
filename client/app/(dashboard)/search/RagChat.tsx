@@ -25,7 +25,7 @@ export default function RagChat() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      content: 'Welcome to KMRL Document Search. Ask me anything about Kochi Metro Rail documents, policies, or procedures.',
+      content: 'Welcome to DocuMind AI! I\'m your intelligent document assistant. Ask me anything about your uploaded documents, and I\'ll help you find insights and answers.',
       role: 'assistant',
       timestamp: new Date(),
     },
@@ -83,7 +83,7 @@ export default function RagChat() {
         extension: 'Metro Line Extension Proposal',
         expansion: 'Infrastructure Expansion Plan 2023-2025',
         passenger: 'Passenger Service Guidelines',
-        operation: 'KMRL Operations Manual 2024'
+        operation: 'Document Processing Guide 2024'
       };
       
       // Check if text contains any keywords
@@ -100,7 +100,7 @@ export default function RagChat() {
       // If still no sources found, add a generic one
       if (sources.length === 0) {
         sources.push({
-          title: 'KMRL Documentation Repository',
+          title: 'Personal Document Repository',
           url: '#',
           snippet: 'Central repository for all Kochi Metro Rail Limited documentation and reports.'
         });
@@ -197,10 +197,10 @@ export default function RagChat() {
           <div>
             <CardTitle className="text-xl flex items-center gap-2">
               <DatabaseIcon className="h-5 w-5 text-primary" />
-              Advanced RAG Document Assistant
+              DocuMind AI Assistant
             </CardTitle>
             <CardDescription>
-              Search across all documents with powerful AI-driven knowledge retrieval
+              Chat with your documents using advanced AI-powered knowledge retrieval
             </CardDescription>
           </div>
           <Badge variant="outline" className="text-xs bg-primary/5 hover:bg-primary/10">
@@ -221,7 +221,7 @@ export default function RagChat() {
             >
               {message.role === 'assistant' && (
                 <Avatar className="h-8 w-8 mr-2 bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-600 shadow-md">
-                  <AvatarImage src="/logos/kmrl-logo-square.png" alt="KMRL Assistant" />
+                  <AvatarImage src="/favicon.png" alt="DocuMind AI Assistant" />
                   <AvatarFallback className="text-xs font-medium bg-gradient-to-br from-blue-600 to-indigo-700 text-white">
                     <svg 
                       xmlns="http://www.w3.org/2000/svg" 
@@ -314,7 +314,7 @@ export default function RagChat() {
           {isLoading && (
             <div className="flex mb-4 justify-start">
               <Avatar className="h-8 w-8 mr-2 bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-600 shadow-md">
-                <AvatarImage src="/logos/kmrl-logo-square.png" alt="KMRL Assistant" />
+                <AvatarImage src="/favicon.png" alt="DocuMind AI Assistant" />
                 <AvatarFallback className="text-xs font-medium bg-gradient-to-br from-blue-600 to-indigo-700 text-white">
                   <svg 
                     xmlns="http://www.w3.org/2000/svg" 
@@ -348,7 +348,7 @@ export default function RagChat() {
         {/* Input form */}
         <form onSubmit={handleSubmit} className="flex gap-2">
           <Input
-            placeholder="Ask about your documents (e.g., 'Summarize safety protocols in stations')"
+            placeholder="Ask about your documents (e.g., 'Summarize key points from the uploaded reports')"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="flex-1"

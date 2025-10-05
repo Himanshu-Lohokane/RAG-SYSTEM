@@ -1,6 +1,8 @@
-"use client";
+import { redirect } from 'next/navigation'
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+export default function UsersPage() {
+  redirect('/upload')
+}
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

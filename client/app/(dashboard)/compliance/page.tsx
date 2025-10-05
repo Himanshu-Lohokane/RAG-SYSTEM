@@ -1,7 +1,8 @@
-"use client";
+import { redirect } from 'next/navigation'
 
-import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+export default function CompliancePage() {
+  redirect('/upload')
+}
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";

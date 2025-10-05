@@ -24,6 +24,8 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from services.ocr_service import VisionService
 from services.classification_service import ClassificationService
 from services.extraction_service import EntityExtractionService
+from services.video_analysis_service import VideoAnalysisService
+from services.audio_analysis_service import AudioAnalysisService
 from utils.preprocessing import preprocess_image
 from utils.postprocessing import clean_extracted_text
 from utils.helpers import generate_processing_id
@@ -35,6 +37,11 @@ router = APIRouter(prefix="/api/documents", tags=["document-processing"])
 vision_service = VisionService()
 classification_service = ClassificationService()
 extraction_service = EntityExtractionService()
+
+# Gemini API key for video/audio analysis - same as chat service
+GEMINI_API_KEY = "AIzaSyC83UvIT3tlGyROpiA3T9NWFFYv1Es2X_E"
+video_service = VideoAnalysisService(GEMINI_API_KEY)
+audio_service = AudioAnalysisService(GEMINI_API_KEY)
 
 # Configure temp directory for file processing
 TEMP_DIR = os.path.join(tempfile.gettempdir(), "datatrack-kmrl-processing")
@@ -95,16 +102,18 @@ async def process_document(
         content_type = file.content_type or mimetypes.guess_type(file.filename)[0] or ""
         
         # Validate file type
-        supported_exts = ['.jpg', '.jpeg', '.png', '.pdf', '.doc', '.docx']
+        supported_exts = ['.jpg', '.jpeg', '.png', '.pdf', '.doc', '.docx', '.mp4', '.avi', '.mov', '.mkv', '.webm', '.mp3', '.wav', '.m4a', '.aac', '.flac']
         supported_types = [
             'image/jpeg', 'image/png', 'application/pdf',
-            'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+            'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'video/mp4', 'video/avi', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska', 'video/webm',
+            'audio/mpeg', 'audio/wav', 'audio/x-wav', 'audio/mp4', 'audio/aac', 'audio/flac'
         ]
         
         if file_ext not in supported_exts and content_type not in supported_types:
             raise HTTPException(
                 status_code=415, 
-                detail=f"Unsupported file type: {content_type or file_ext}. Supported formats: JPG, PNG, PDF, DOC, DOCX"
+                detail=f"Unsupported file type: {content_type or file_ext}. Supported formats: JPG, PNG, PDF, DOC, DOCX, MP4, AVI, MOV, MKV, WEBM, MP3, WAV, M4A, AAC, FLAC"
             )
         
         # Create temp file path
@@ -262,6 +271,72 @@ async def process_document(
                     status_code=500,
                     detail=f"Word document processing failed: {str(e)}"
                 )
+        
+        # Video processing
+        elif content_type.startswith('video/') or file_ext.lower() in ['.mp4', '.avi', '.mov', '.mkv', '.webm']:
+            print(f"[API] Processing video file: {file.filename}")
+            
+            try:
+                # Analyze video using Gemini
+                video_analysis = video_service.analyze_video(temp_file_path, file.filename)
+                
+                if video_analysis.get('error'):
+                    raise HTTPException(
+                        status_code=422,
+                        detail=f"Video analysis failed: {video_analysis['error']}"
+                    )
+                
+                # Use the summary as extracted text for consistency with other document types
+                extracted_text = video_analysis.get('summary', '')
+                confidence = video_analysis.get('confidence', 0.8)
+                
+                # Store video analysis results for later retrieval
+                video_analysis_data = video_analysis
+                
+                print(f"[API] ✅ Video analysis completed: {len(extracted_text)} chars extracted")
+                
+            except HTTPException:
+                raise
+            except Exception as e:
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Video processing failed: {str(e)}"
+                )
+        
+        # Audio processing
+        elif content_type.startswith('audio/') or file_ext.lower() in ['.mp3', '.wav', '.m4a', '.aac', '.flac']:
+            print(f"[API] Processing audio file: {file.filename}")
+            
+            try:
+                # Analyze audio using Gemini
+                audio_analysis = audio_service.analyze_audio(temp_file_path, file.filename)
+                
+                if audio_analysis.get('error'):
+                    raise HTTPException(
+                        status_code=422,
+                        detail=f"Audio analysis failed: {audio_analysis['error']}"
+                    )
+                
+                # Use the transcription as extracted text for consistency with other document types
+                extracted_text = audio_analysis.get('transcription', '')
+                # If no transcription, use summary as fallback
+                if not extracted_text:
+                    extracted_text = audio_analysis.get('summary', '')
+                
+                confidence = audio_analysis.get('confidence', 0.8)
+                
+                # Store audio analysis results for later retrieval
+                audio_analysis_data = audio_analysis
+                
+                print(f"[API] ✅ Audio analysis completed: {len(extracted_text)} chars extracted")
+                
+            except HTTPException:
+                raise
+            except Exception as e:
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Audio processing failed: {str(e)}"
+                )
             
         else:
             # Unsupported file type (this should be caught by the earlier validation)
@@ -352,6 +427,16 @@ async def process_document(
                 "processing_time_seconds": processing_time
             }
         }
+        
+        # Add video analysis data if available
+        if 'video_analysis_data' in locals():
+            result["video_analysis"] = video_analysis_data
+            result["processing_info"]["analysis_type"] = "video"
+        
+        # Add audio analysis data if available
+        if 'audio_analysis_data' in locals():
+            result["audio_analysis"] = audio_analysis_data
+            result["processing_info"]["analysis_type"] = "audio"
         
         # Store result for later retrieval (temporary in-memory storage)
         processing_results[processing_id] = result

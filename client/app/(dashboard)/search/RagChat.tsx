@@ -1,11 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { SearchIcon, SendIcon, FileTextIcon, DatabaseIcon, AlertCircle } from "lucide-react";
+import { SendIcon, FileTextIcon } from "lucide-react";
 import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
 import ReactMarkdown from 'react-markdown';
 
 interface Message {
@@ -33,11 +31,6 @@ export default function RagChat() {
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll disabled
-  // useEffect(() => {
-  //   messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  // }, [messages]);
-
   // Function to extract sources from response text
   const extractSources = (text: string): { title: string; url: string; snippet: string }[] => {
     const sources: { title: string; url: string; snippet: string }[] = [];
@@ -63,7 +56,7 @@ export default function RagChat() {
         } else if (doc.toLowerCase().includes('financial') || doc.toLowerCase().includes('finance')) {
           snippet = 'Financial analysis including revenue growth, operational expenses, and cost optimization measures.';
         } else {
-          snippet = `This document provides key information related to Kochi Metro Rail operations and planning.`;
+          snippet = `This document provides key information related to document processing and analysis.`;
         }
         
         sources.push({
@@ -77,12 +70,12 @@ export default function RagChat() {
     // If no sources were found in quotes, generate reasonable ones based on keywords
     if (sources.length === 0) {
       const keywords = {
-        security: 'KMR_Annual_Security_Audit_Report_2023',
+        security: 'Security_Audit_Report_2024',
         safety: 'Safety Compliance Report Q2 2024',
         financial: 'Financial Statement Q1 2024',
-        extension: 'Metro Line Extension Proposal',
+        extension: 'Project Extension Proposal',
         expansion: 'Infrastructure Expansion Plan 2023-2025',
-        passenger: 'Passenger Service Guidelines',
+        passenger: 'Service Guidelines Document',
         operation: 'Document Processing Guide 2024'
       };
       
@@ -102,7 +95,7 @@ export default function RagChat() {
         sources.push({
           title: 'Personal Document Repository',
           url: '#',
-          snippet: 'Central repository for all Kochi Metro Rail Limited documentation and reports.'
+          snippet: 'Central repository for all uploaded documents and reports.'
         });
       }
     }
@@ -188,92 +181,56 @@ export default function RagChat() {
   };
 
   return (
-    <div className="w-full bg-card rounded-lg shadow-md border-2 border-primary/10 mb-6 relative overflow-hidden" style={{ 
-      backgroundImage: `radial-gradient(circle at 1px 1px, rgba(59, 130, 246, 0.06) 1px, transparent 0)`,
-      backgroundSize: '20px 20px'
-    }}>
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-xl flex items-center gap-2">
-              <DatabaseIcon className="h-5 w-5 text-primary" />
-              DocuMind AI Assistant
-            </CardTitle>
-            <CardDescription>
-              Chat with your documents using advanced AI-powered knowledge retrieval
-            </CardDescription>
-          </div>
-          <Badge variant="outline" className="text-xs bg-primary/5 hover:bg-primary/10">
-            <span className="text-primary font-medium">AI-Powered</span>
-          </Badge>
+    <div className="flex flex-col bg-gradient-to-b from-background to-muted/20" style={{ height: 'calc(100vh - 4rem)' }}>
+      {/* Header */}
+      <div className="border-b bg-background/80 backdrop-blur-sm p-4">
+        <div className="max-w-4xl mx-auto">
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
+            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-600 flex items-center justify-center text-white font-semibold text-sm">
+              DM
+            </div>
+            DocuMind AI Assistant
+          </h1>
+          <p className="text-muted-foreground mt-1">Chat with your documents using advanced AI</p>
         </div>
-      </CardHeader>
-      
-      <CardContent className="p-4 pt-0">
-        {/* Messages container */}
-        <div className="mb-4 max-h-[420px] overflow-y-auto p-4 bg-muted/50 rounded-lg shadow-inner border border-muted">
+      </div>
+
+      {/* Messages container - takes up most of the screen */}
+      <div className="flex-1 overflow-y-auto p-6">
+        <div className="max-w-4xl mx-auto">
           {messages.map((message) => (
             <div
               key={message.id}
-              className={`flex mb-4 ${
+              className={`flex mb-6 ${
                 message.role === 'user' ? 'justify-end' : 'justify-start'
               }`}
             >
               {message.role === 'assistant' && (
-                <Avatar className="h-8 w-8 mr-2 bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-600 shadow-md">
+                <Avatar className="h-8 w-8 mr-3 bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-600 shadow-sm shrink-0">
                   <AvatarImage src="/favicon.png" alt="DocuMind AI Assistant" />
                   <AvatarFallback className="text-xs font-medium bg-gradient-to-br from-blue-600 to-indigo-700 text-white">
-                    <svg 
-                      xmlns="http://www.w3.org/2000/svg" 
-                      className="h-5 w-5" 
-                      viewBox="0 0 24 24" 
-                      fill="none" 
-                      stroke="currentColor" 
-                      strokeWidth="2" 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round"
-                    >
-                      <circle cx="12" cy="12" r="10"/>
-                      <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
-                      <path d="M12 17h.01"/>
-                    </svg>
+                    DM
                   </AvatarFallback>
                 </Avatar>
               )}
               
               <div
-                className={`rounded-lg p-3 max-w-[80%] ${
+                className={`rounded-2xl p-4 max-w-[75%] shadow-sm border ${
                   message.role === 'user'
-                    ? 'bg-primary text-white shadow-sm'
-                    : 'bg-background border shadow-sm'
+                    ? 'bg-primary text-white border-primary/20'
+                    : 'bg-background border-border/50'
                 }`}
               >
-                <div className={`text-sm prose prose-sm ${message.role === 'user' ? 'prose-invert' : 'prose-stone dark:prose-invert'} max-w-none`}>
+                <div className={`prose prose-sm ${message.role === 'user' ? 'prose-invert' : 'prose-stone dark:prose-invert'} max-w-none`}>
                   <ReactMarkdown>
                     {message.content}
                   </ReactMarkdown>
                 </div>
                 
                 {message.sources && message.sources.length > 0 && (
-                  <div className="mt-3 pt-2 border-t border-gray-200 dark:border-gray-700">
-                    <p className="text-xs font-medium mb-2 flex items-center gap-1">
-                      <svg 
-                        xmlns="http://www.w3.org/2000/svg" 
-                        className="h-3 w-3" 
-                        viewBox="0 0 24 24" 
-                        fill="none" 
-                        stroke="currentColor" 
-                        strokeWidth="2" 
-                        strokeLinecap="round" 
-                        strokeLinejoin="round"
-                      >
-                        <path d="M9 17h6"></path>
-                        <path d="M9 12h6"></path>
-                        <path d="M11.5 3h-5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Z"></path>
-                        <path d="M9 1v4"></path>
-                        <path d="M14 1v4"></path>
-                        <path d="M11.5 3a5.5 5.5 0 0 1 5.5 5.5V9"></path>
-                      </svg>
+                  <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
+                    <p className="text-xs font-medium mb-2 flex items-center gap-1 text-muted-foreground">
+                      <FileTextIcon className="h-3 w-3" />
                       Sources:
                     </p>
                     <div className="flex flex-wrap gap-2">
@@ -292,8 +249,8 @@ export default function RagChat() {
                           </Badge>
                           
                           {/* Tooltip */}
-                          <div className="absolute bottom-full left-0 mb-2 w-64 rounded bg-muted p-2 text-xs shadow opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
-                            <p className="font-medium text-primary/80">{source.title}</p>
+                          <div className="absolute bottom-full left-0 mb-2 w-64 rounded bg-popover p-2 text-xs shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10 border">
+                            <p className="font-medium text-popover-foreground">{source.title}</p>
                             <p className="mt-1 text-muted-foreground">{source.snippet}</p>
                           </div>
                         </div>
@@ -304,39 +261,27 @@ export default function RagChat() {
               </div>
               
               {message.role === 'user' && (
-                <Avatar className="h-8 w-8 ml-2 border-2 border-primary/20 shadow-sm">
-                  <AvatarFallback className="bg-muted text-muted-foreground text-xs font-medium">YOU</AvatarFallback>
+                <Avatar className="h-8 w-8 ml-3 shrink-0">
+                  <AvatarFallback className="bg-primary text-primary-foreground text-xs font-medium">YOU</AvatarFallback>
                 </Avatar>
               )}
             </div>
           ))}
           
           {isLoading && (
-            <div className="flex mb-4 justify-start">
-              <Avatar className="h-8 w-8 mr-2 bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-600 shadow-md">
+            <div className="flex mb-6 justify-start">
+              <Avatar className="h-8 w-8 mr-3 bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-600 shadow-sm shrink-0">
                 <AvatarImage src="/favicon.png" alt="DocuMind AI Assistant" />
                 <AvatarFallback className="text-xs font-medium bg-gradient-to-br from-blue-600 to-indigo-700 text-white">
-                  <svg 
-                    xmlns="http://www.w3.org/2000/svg" 
-                    className="h-5 w-5" 
-                    viewBox="0 0 24 24" 
-                    fill="none" 
-                    stroke="currentColor" 
-                    strokeWidth="2" 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round"
-                  >
-                    <circle cx="12" cy="12" r="10"/>
-                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
-                    <path d="M12 17h.01"/>
-                  </svg>
+                  DM
                 </AvatarFallback>
               </Avatar>
-              <div className="rounded-lg p-4 max-w-[80%] bg-background border shadow-sm">
+              <div className="rounded-2xl p-4 max-w-[75%] bg-background border border-border/50 shadow-sm">
                 <div className="flex items-center gap-2">
                   <div className="h-2 w-2 rounded-full bg-primary animate-pulse"></div>
                   <div className="h-2 w-2 rounded-full bg-primary animate-pulse delay-150"></div>
                   <div className="h-2 w-2 rounded-full bg-primary animate-pulse delay-300"></div>
+                  <span className="text-sm text-muted-foreground ml-2">Thinking...</span>
                 </div>
               </div>
             </div>
@@ -344,32 +289,38 @@ export default function RagChat() {
           
           <div ref={messagesEndRef} />
         </div>
-        
-        {/* Input form */}
-        <form onSubmit={handleSubmit} className="flex gap-2">
-          <Input
-            placeholder="Ask about your documents (e.g., 'Summarize key points from the uploaded reports')"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            className="flex-1"
-            disabled={isLoading}
-          />
-          <Button 
-            type="submit" 
-            disabled={isLoading}
-            className="bg-primary hover:bg-primary/90 px-3 aspect-square"
-          >
-            {isLoading ? (
-              <span className="flex items-center">
-                <span className="animate-spin rounded-full h-4 w-4 border-t-2 border-white"></span>
-                <span className="sr-only">Searching...</span>
-              </span>
-            ) : (
-              <SendIcon className="h-4 w-4" />
-            )}
-          </Button>
-        </form>
-      </CardContent>
+      </div>
+      
+      {/* Input form - fixed at bottom */}
+      <div className="border-t bg-background/95 backdrop-blur-sm p-6 shadow-lg">
+        <div className="max-w-4xl mx-auto">
+          <form onSubmit={handleSubmit} className="flex gap-4">
+            <div className="flex-1 relative">
+              <Input
+                placeholder="Ask about your documents..."
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                className="bg-background rounded-full border-2 border-border/50 px-6 py-4 h-14 text-base focus:border-primary/50 focus:ring-2 focus:ring-primary/20 shadow-sm"
+                disabled={isLoading}
+              />
+            </div>
+            <Button 
+              type="submit" 
+              disabled={isLoading || !query.trim()}
+              className="bg-primary hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground rounded-full h-14 w-14 p-0 shadow-md transition-all duration-200 hover:shadow-lg"
+            >
+              {isLoading ? (
+                <span className="animate-spin rounded-full h-5 w-5 border-t-2 border-white"></span>
+              ) : (
+                <SendIcon className="h-5 w-5" />
+              )}
+            </Button>
+          </form>
+          <p className="text-xs text-muted-foreground text-center mt-3">
+            DocuMind AI can make mistakes. Consider checking important information.
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

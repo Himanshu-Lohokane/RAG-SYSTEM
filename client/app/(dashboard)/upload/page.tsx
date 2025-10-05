@@ -25,7 +25,11 @@ import {
   Download,
   Languages,
   Tag,
-  Clipboard
+  Clipboard,
+  Video,
+  Music,
+  FileVideo,
+  FileAudio
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -157,25 +161,29 @@ const DocumentUploadPage = () => {
   };
 
   const processFiles = (fileList: File[]) => {
-    // Accept images, PDFs, and DOC/DOCX files
+    // Accept images, PDFs, DOC/DOCX files, videos, and audio files
     const supportedFiles = fileList.filter(file => 
       file.type.startsWith('image/') || 
       file.type === 'application/pdf' ||
       file.type === 'application/msword' || 
-      file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+      file.type.startsWith('video/') ||
+      file.type.startsWith('audio/')
     );
     
     const unsupportedFiles = fileList.filter(file => 
       !file.type.startsWith('image/') && 
       file.type !== 'application/pdf' &&
       file.type !== 'application/msword' && 
-      file.type !== 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      file.type !== 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' &&
+      !file.type.startsWith('video/') &&
+      !file.type.startsWith('audio/')
     );
 
     if (unsupportedFiles.length > 0) {
       toast({
         title: "File type notice",
-        description: `${unsupportedFiles.length} unsupported file(s) skipped. Only images, PDFs, and DOC/DOCX files are supported.`,
+        description: `${unsupportedFiles.length} unsupported file(s) skipped. Only images, PDFs, DOC/DOCX, video, and audio files are supported.`,
         variant: "destructive"
       });
     }
@@ -183,7 +191,7 @@ const DocumentUploadPage = () => {
     if (supportedFiles.length === 0) {
       toast({
         title: "No valid files",
-        description: "Please upload supported files (PNG, JPG, PDF, DOC, DOCX) for processing.",
+        description: "Please upload supported files (PNG, JPG, PDF, DOC, DOCX, MP4, MP3, WAV, etc.) for processing.",
         variant: "destructive"
       });
       return;
@@ -492,6 +500,8 @@ const DocumentUploadPage = () => {
 
   const getFileIcon = (type: string) => {
     if (type.startsWith("image/")) return Image;
+    if (type.startsWith("video/")) return Video;
+    if (type.startsWith("audio/")) return Music;
     if (type.includes("pdf") || type.includes("document")) return FileText;
     return File;
   };
@@ -508,8 +518,8 @@ const DocumentUploadPage = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-foreground">Document Processing</h1>
-        <p className="text-muted-foreground">Upload documents for AI-powered OCR, text extraction, and intelligent analysis with multi-language support</p>
+        <h1 className="text-3xl font-bold text-foreground">Media Analysis</h1>
+        <p className="text-muted-foreground">Upload documents, images, videos, and audio files for AI-powered analysis, text extraction, and intelligent content processing with multi-language support</p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -519,7 +529,7 @@ const DocumentUploadPage = () => {
             <TabsList>
               <TabsTrigger value="upload">
                 <Upload className="h-4 w-4 mr-2" />
-                Upload Documents
+                Upload Media
               </TabsTrigger>
             </TabsList>
 
@@ -541,7 +551,7 @@ const DocumentUploadPage = () => {
                     <Upload className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                     <h3 className="text-lg font-semibold mb-2">Drag and drop files here</h3>
                     <p className="text-muted-foreground mb-4">
-                      Upload documents for intelligent text extraction and AI-powered analysis
+                      Upload documents, images, videos, or audio files for AI-powered analysis and content extraction
                     </p>
                     <input
                       type="file"
@@ -549,7 +559,7 @@ const DocumentUploadPage = () => {
                       onChange={handleFileInput}
                       className="hidden"
                       id="file-upload"
-                      accept="image/*,application/pdf,.doc,.docx"
+                      accept="image/*,application/pdf,.doc,.docx,video/*,audio/*"
                     />
                     <Button 
                       className="bg-gradient-primary"
@@ -559,7 +569,7 @@ const DocumentUploadPage = () => {
                       Select Files
                     </Button>
                     <p className="text-xs text-muted-foreground mt-2">
-                      Supported formats: JPG, PNG, PDF, DOC, DOCX • Max 50MB per file
+                      Supported formats: JPG, PNG, PDF, DOC, DOCX, MP4, AVI, MOV, MP3, WAV, M4A • Max 50MB per file
                     </p>
                   </div>
                 </CardContent>
@@ -569,8 +579,9 @@ const DocumentUploadPage = () => {
               <Alert>
                 <Languages className="h-4 w-4" />
                 <AlertDescription>
-                  <strong>Multi-Modal AI Processing:</strong> Supports image files (JPG, PNG), PDF documents and Word files (DOC, DOCX) with
-                  intelligent text extraction and analysis. Optimized for documents, forms, and multi-language content.
+                  <strong>Multi-Modal AI Processing:</strong> Supports images (JPG, PNG), documents (PDF, DOC, DOCX), 
+                  videos (MP4, AVI, MOV), and audio files (MP3, WAV, M4A) with intelligent content analysis and extraction. 
+                  Optimized for documents, forms, multimedia, and multi-language content.
                 </AlertDescription>
               </Alert>
 
@@ -656,13 +667,17 @@ const DocumentUploadPage = () => {
                                         className={`text-xs ${
                                           file.type.includes('pdf') ? 'bg-red-100 text-red-800 hover:bg-red-100' : 
                                           file.type.includes('doc') ? 'bg-blue-100 text-blue-800 hover:bg-blue-100' : 
-                                          file.type.includes('image') ? 'bg-green-100 text-green-800 hover:bg-green-100' : 
+                                          file.type.includes('image') ? 'bg-green-100 text-green-800 hover:bg-green-100' :
+                                          file.type.startsWith('video/') ? 'bg-purple-100 text-purple-800 hover:bg-purple-100' :
+                                          file.type.startsWith('audio/') ? 'bg-orange-100 text-orange-800 hover:bg-orange-100' :
                                           'bg-slate-100 text-slate-800 hover:bg-slate-100'
                                         }`}
                                       >
                                         {file.type.includes('pdf') ? 'pdf' : 
                                         file.type.includes('doc') ? 'doc' : 
-                                        file.type.includes('image') ? 'image' : 
+                                        file.type.includes('image') ? 'image' :
+                                        file.type.startsWith('video/') ? 'video' :
+                                        file.type.startsWith('audio/') ? 'audio' :
                                         'file'}
                                       </Badge>
                                     ) : (
@@ -848,13 +863,17 @@ const DocumentUploadPage = () => {
                         className={`text-xs ${
                           selectedFileResult.type.includes('pdf') ? 'bg-red-100 text-red-800 hover:bg-red-100' : 
                           selectedFileResult.type.includes('doc') ? 'bg-blue-100 text-blue-800 hover:bg-blue-100' : 
-                          selectedFileResult.type.includes('image') ? 'bg-green-100 text-green-800 hover:bg-green-100' : 
+                          selectedFileResult.type.includes('image') ? 'bg-green-100 text-green-800 hover:bg-green-100' :
+                          selectedFileResult.type.startsWith('video/') ? 'bg-purple-100 text-purple-800 hover:bg-purple-100' :
+                          selectedFileResult.type.startsWith('audio/') ? 'bg-orange-100 text-orange-800 hover:bg-orange-100' :
                           'bg-slate-100 text-slate-800 hover:bg-slate-100'
                         }`}
                       >
                         {selectedFileResult.type.includes('pdf') ? 'PDF Document' : 
                          selectedFileResult.type.includes('doc') ? 'Word Document' : 
-                         selectedFileResult.type.includes('image') ? 'Image File' : 
+                         selectedFileResult.type.includes('image') ? 'Image File' :
+                         selectedFileResult.type.startsWith('video/') ? 'Video File' :
+                         selectedFileResult.type.startsWith('audio/') ? 'Audio File' :
                          selectedFileResult.type.split('/')[1]?.toUpperCase() || 'Unknown File Type'}
                       </Badge>
                     </div>
@@ -876,13 +895,27 @@ const DocumentUploadPage = () => {
                       </div>
                     )}
 
-                    {/* Text Content - Vertical layout with extracted text first, then translation */}
+                    {/* Content Analysis - Adaptive layout for different file types */}
                     <div className="space-y-4">
-                      {/* Extracted Text */}
+                      {/* Primary Content */}
                       <div className="space-y-2">
                         <h4 className="font-medium flex items-center gap-2">
-                          <FileText className="h-4 w-4" />
-                          Extracted Text 
+                          {selectedFileResult.type.startsWith('video/') ? (
+                            <>
+                              <Video className="h-4 w-4" />
+                              Video Analysis
+                            </>
+                          ) : selectedFileResult.type.startsWith('audio/') ? (
+                            <>
+                              <Music className="h-4 w-4" />
+                              Audio Analysis
+                            </>
+                          ) : (
+                            <>
+                              <FileText className="h-4 w-4" />
+                              Extracted Text
+                            </>
+                          )}
                           {selectedFileResult.result.language_detection && (
                             <Badge variant="outline" className="ml-2">
                               {selectedFileResult.result.language_detection.language_name}
@@ -897,19 +930,31 @@ const DocumentUploadPage = () => {
                         />
                       </div>
                       
-                      {/* Translated Text */}
+                      {/* Secondary Content - Translation or Summary */}
                       <div className="space-y-2 border-t pt-4">
                         <h4 className="font-medium flex items-center gap-2">
-                          <Languages className="h-4 w-4" />
-                          Translated Text
-                          {selectedFileResult.result.translation?.target_language_name && (
-                            <Badge variant="outline" className="ml-2">
-                              {selectedFileResult.result.translation.target_language_name || 'English'}
-                            </Badge>
+                          {selectedFileResult.type.startsWith('video/') || selectedFileResult.type.startsWith('audio/') ? (
+                            <>
+                              <Languages className="h-4 w-4" />
+                              Summary
+                              <Badge variant="outline" className="ml-2">
+                                English
+                              </Badge>
+                            </>
+                          ) : (
+                            <>
+                              <Languages className="h-4 w-4" />
+                              Translated Text
+                              {selectedFileResult.result.translation?.target_language_name && (
+                                <Badge variant="outline" className="ml-2">
+                                  {selectedFileResult.result.translation.target_language_name || 'English'}
+                                </Badge>
+                              )}
+                            </>
                           )}
                         </h4>
                         <Textarea 
-                          value={selectedFileResult.result.translation?.translated_text || 'No translation available.'}
+                          value={selectedFileResult.result.translation?.translated_text || 'No translation/summary available.'}
                           readOnly
                           rows={8}
                           className="resize-none text-sm w-full"
@@ -921,7 +966,7 @@ const DocumentUploadPage = () => {
                     <div className="flex gap-2">
                       <Button size="sm" variant="outline">
                         <Download className="h-4 w-4 mr-2" />
-                        Export Text
+                        Export Results
                       </Button>
                     </div>
                   </>
@@ -934,7 +979,7 @@ const DocumentUploadPage = () => {
                 <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                 <h3 className="font-medium mb-2">No file selected</h3>
                 <p className="text-sm text-muted-foreground">
-                  Upload and process an image to view OCR results here.
+                  Upload and process a document, image, video, or audio file to view analysis results here.
                 </p>
               </CardContent>
             </Card>

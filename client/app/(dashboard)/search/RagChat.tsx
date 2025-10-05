@@ -23,7 +23,7 @@ export default function RagChat() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      content: 'Welcome to DocuMind AI! I\'m your intelligent document assistant. Ask me anything about your uploaded documents, and I\'ll help you find insights and answers.',
+      content: 'Welcome to DocuMind AI! I\'m your intelligent media assistant. Ask me anything about your uploaded documents, images, videos, or audio files, and I\'ll help you find insights and answers.',
       role: 'assistant',
       timestamp: new Date(),
     },
@@ -95,7 +95,7 @@ export default function RagChat() {
         sources.push({
           title: 'Personal Document Repository',
           url: '#',
-          snippet: 'Central repository for all uploaded documents and reports.'
+          snippet: 'Central repository for all uploaded documents, images, videos, and audio files.'
         });
       }
     }
@@ -191,7 +191,7 @@ export default function RagChat() {
             </div>
             DocuMind AI Assistant
           </h1>
-          <p className="text-muted-foreground mt-1">Chat with your documents using advanced AI</p>
+          <p className="text-muted-foreground mt-1">Chat with your documents, images, videos, and audio files using advanced AI</p>
         </div>
       </div>
 
@@ -297,7 +297,7 @@ export default function RagChat() {
           <form onSubmit={handleSubmit} className="flex gap-4">
             <div className="flex-1 relative">
               <Input
-                placeholder="Ask about your documents..."
+                placeholder="Ask about your media files..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 className="bg-background rounded-full border-2 border-border/50 px-6 py-4 h-14 text-base focus:border-primary/50 focus:ring-2 focus:ring-primary/20 shadow-sm"

@@ -281,25 +281,14 @@ export default function RagChat() {
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {message.sources.map((source, idx) => (
-                        <div
+                        <Badge 
                           key={idx}
-                          className="group relative"
+                          variant="outline" 
+                          className="text-xs flex items-center gap-1"
                         >
-                          <Badge 
-                            variant="outline" 
-                            className="text-xs flex items-center gap-1 hover:bg-primary/10 cursor-pointer transition-all"
-                            onClick={() => console.log('Open source:', source.title)}
-                          >
-                            <FileTextIcon className="h-3 w-3 text-primary" />
-                            {source.title}
-                          </Badge>
-                          
-                          {/* Tooltip */}
-                          <div className="absolute bottom-full left-0 mb-2 w-64 rounded bg-popover p-2 text-xs shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10 border">
-                            <p className="font-medium text-popover-foreground">{source.title}</p>
-                            <p className="mt-1 text-muted-foreground">{source.snippet}</p>
-                          </div>
-                        </div>
+                          <FileTextIcon className="h-3 w-3 text-primary" />
+                          {source.title}
+                        </Badge>
                       ))}
                     </div>
                   </div>
